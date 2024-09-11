@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/fit-schedule-planner/static/css/main.f855e6bc.css",
+    "main.js": "/fit-schedule-planner/static/js/main.d90e105a.js",
+    "static/js/453.ed3810f9.chunk.js": "/fit-schedule-planner/static/js/453.ed3810f9.chunk.js",
+    "static/media/logo.svg": "/fit-schedule-planner/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/fit-schedule-planner/index.html",
+    "main.f855e6bc.css.map": "/fit-schedule-planner/static/css/main.f855e6bc.css.map",
+    "main.d90e105a.js.map": "/fit-schedule-planner/static/js/main.d90e105a.js.map",
+    "453.ed3810f9.chunk.js.map": "/fit-schedule-planner/static/js/453.ed3810f9.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.d90e105a.js"
+  ]
+}
