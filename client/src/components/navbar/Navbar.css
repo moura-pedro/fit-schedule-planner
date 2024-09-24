@@ -10,17 +10,16 @@ nav {
     align-items: center;
     justify-content: space-between;
 }
-nav img {
-    background: #fff;
-}
+
 
 .logo {
-    width: 180px;
+    width: 100px;
 }
 
 nav ul li {
-    display: inline-block;
+    display:flex;
     list-style: none;
-    margin: 5px 20px;
+    padding: 10px;
     font-size: 16px;
+    margin: 0.5px;
 }
