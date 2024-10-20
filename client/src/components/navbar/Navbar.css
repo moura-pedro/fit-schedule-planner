@@ -11,6 +11,11 @@ nav {
     justify-content: space-between;
 }
 
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px;
+  }
 
 .logo {
     width: 100px;
@@ -23,3 +28,8 @@ nav ul li {
     font-size: 16px;
     margin: 0.5px;
 }
+
+nav ul li a:hover {
+    color: lightslategrey;
+    border-color: var(--green);
+  }
