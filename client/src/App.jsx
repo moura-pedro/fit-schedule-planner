@@ -1,13 +1,16 @@
 import './App.css';
-import { Routes, Route } from 'react-router-dom'
+
+import { Routes, Route } from 'react-router-dom';
+import axios from 'axios';
+import { Toaster } from 'react-hot-toast';
+import { UserContextProvider } from './context/userContext';
+
 import Navbar from './components/Navbar/Navbar'
 import Home from './pages/Home/Home'
 import Register from './pages/Register/Register';
 import Login from './pages/Login/Login';
-import axios from 'axios'
-import { Toaster } from 'react-hot-toast'
-import { UserContextProvider } from './context/userContext';
 import Dashboard from './pages/Dashboard/Dashboard';
+import Search from './pages/Search/Search';
 
 axios.defaults.baseURL = 'http://localhost:8000'
 axios.defaults.withCredentials = true
@@ -23,6 +26,7 @@ function App () {
         <Route path='/register' element={<Register />} />
         <Route path='/login' element={<Login />} />
         <Route path='/dashboard' element={<Dashboard />} />
+        <Route path="/search" element={<Search />} />
       </Routes>
     </UserContextProvider>
   )
