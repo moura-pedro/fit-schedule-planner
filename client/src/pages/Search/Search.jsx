@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import './Search.css';
 
@@ -8,6 +8,8 @@ const Search = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [resultsPerPage] = useState(5);
   const [selectedDay, setSelectedDay] = useState('');
+  
+  const searchFormRef = useRef(null);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -22,6 +24,8 @@ const Search = () => {
       console.log('Search results:', data); // Log the response data
       setResults(data);
       setCurrentPage(1); // Reset to first page on new search
+      
+      
     } catch (error) {
       console.error('Error fetching search results:', error);
     }
@@ -53,10 +57,10 @@ const Search = () => {
   return (
     <div className="search-container">
       <h1>Search Courses</h1>
-      <form onSubmit={handleSearch}>
+      <form onSubmit={handleSearch} ref={searchFormRef}>
         <input
           type="text"
-          placeholder="Search by course title or prerequisites"
+          placeholder="Search by course title or number"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />

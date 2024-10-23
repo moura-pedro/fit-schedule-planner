@@ -32,7 +32,7 @@ function Login() {
   }
 
   return (
-    <div>
+    <div className="login-container">
       <form onSubmit={loginUser}>
         <label htmlFor="">Email</label>
         <input type='email' placeholder='enter email...' value={data.email} onChange={
