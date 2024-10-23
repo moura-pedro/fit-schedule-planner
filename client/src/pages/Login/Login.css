@@ -1,5 +1,6 @@
-/* General Styles */
-body {
+/* Adding a specific class or ID to scope the styles */
+.login-container {
+    /* General Styles */
     font-family: Arial, sans-serif;
     background-color: #CBCCCE; /* Athletics Gray */
     color: #333;
@@ -12,7 +13,7 @@ body {
 }
 
 /* Form Styles */
-form {
+.login-container form {
     background-color: white;
     padding: 20px;
     border-radius: 8px;
@@ -22,7 +23,7 @@ form {
 }
 
 /* Label Styles */
-label {
+.login-container label {
     display: block;
     margin-bottom: 8px;
     font-weight: bold;
@@ -30,9 +31,9 @@ label {
 }
 
 /* Input Styles */
-input[type="email"],
-input[type="password"],
-input[type="text"] {
+.login-container input[type="email"],
+.login-container input[type="password"],
+.login-container input[type="text"] {
     width: 100%;
     padding: 10px;
     margin-bottom: 20px;
@@ -41,7 +42,7 @@ input[type="text"] {
 }
 
 /* Button Styles */
-button {
+.login-container button {
     width: 100%;
     padding: 10px;
     background-color: #770000; /* Crimson */
@@ -52,6 +53,6 @@ button {
     cursor: pointer;
 }
 
-button:hover {
+.login-container button:hover {
     background-color: #AB946C; /* Gold */
 }

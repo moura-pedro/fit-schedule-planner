@@ -2,7 +2,7 @@ import { useState } from 'react'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
-import './Register.css'
+// import './Register.css'
 
 function Register() {
 
@@ -37,7 +37,7 @@ function Register() {
   }
 
   return (
-    <div>
+    <div className="register-container">
       <form onSubmit={registerUser}>
         <label htmlFor="">Name</label>
         <input type='text' placeholder='enter name...' value={data.name} onChange={
