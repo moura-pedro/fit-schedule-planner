@@ -1,25 +1,34 @@
-// client/src/pages/Dashboard/Dashboard.jsx
 import { useContext } from "react";
 import { UserContext } from "../../context/userContext";
 import FileUpload from "../../components/FileUpload/FileUpload";
-// import './Dashboard.css'
+import './Dashboard.css';
 
 export default function Dashboard() {
     const { user, loading } = useContext(UserContext);
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="dashboard-container">
+                <div className="dashboard-content">
+                    <div className="status-message">Loading...</div>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 mt-20">
-            <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
-            {user && (
-                <>
-                    <h2 className="text-2xl mb-6">Hi, {user.name}!</h2>
+        <div className="dashboard-container">
+            <div className="dashboard-content">
+                <div className="dashboard-header">
+                    <h1>Dashboard</h1>
+                    {user && <h2>Welcome, {user.name}!</h2>}
+                </div>
+                
+                <div className="file-section">
+                    <h3>File Management</h3>
                     <FileUpload />
-                </>
-            )}
+                </div>
+            </div>
         </div>
     );
 }
