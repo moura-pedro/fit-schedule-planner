@@ -1,0 +1,148 @@
+/* client/src/pages/Dashboard/Dashboard.css */
+
+.dashboard-container {
+    font-family: Arial, sans-serif;
+    background-color: #CBCCCE; /* Athletics Gray, consistent with login/register */
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    min-height: 100vh;
+    padding-top: 90px; /* Account for fixed navbar */
+}
+
+.dashboard-content {
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: white;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #CBCCCE;
+}
+
+.dashboard-header h1 {
+    font-size: 2.5rem;
+    color: #770000; /* Crimson, consistent with your color scheme */
+    margin-bottom: 10px;
+}
+
+.dashboard-header h2 {
+    font-size: 1.8rem;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+/* File Upload Section Styles */
+.file-section {
+    background-color: #f9f9f9;
+    padding: 25px;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+
+.file-section h3 {
+    color: #770000;
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+}
+
+.current-file {
+    background-color: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border: 1px solid #CBCCCE;
+}
+
+.current-file p {
+    margin: 5px 0;
+    color: #555;
+}
+
+.file-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #CBCCCE;
+    border-radius: 4px;
+}
+
+/* Button Styles */
+.dashboard-btn {
+    padding: 12px 25px;
+    border: none;
+    background-color: #770000;
+    color: white;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.dashboard-btn:hover {
+    background-color: #AB946C; /* Gold, from your existing color scheme */
+    transform: translateY(-2px);
+}
+
+.dashboard-btn:disabled {
+    background-color: #CBCCCE;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.download-btn {
+    background-color: #4a5568;
+    margin-right: 10px;
+}
+
+.download-btn:hover {
+    background-color: #2d3748;
+}
+
+/* Status Messages */
+.status-message {
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+.status-success {
+    background-color: #f0fff4;
+    color: #2f855a;
+    border: 1px solid #9ae6b4;
+}
+
+.status-error {
+    background-color: #fff5f5;
+    color: #c53030;
+    border: 1px solid #feb2b2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 10px;
+        padding-top: 80px;
+    }
+
+    .dashboard-content {
+        padding: 20px;
+    }
+
+    .dashboard-header h1 {
+        font-size: 2rem;
+    }
+
+    .dashboard-header h2 {
+        font-size: 1.5rem;
+    }
+
+    .file-section {
+        padding: 15px;
+    }
+}
