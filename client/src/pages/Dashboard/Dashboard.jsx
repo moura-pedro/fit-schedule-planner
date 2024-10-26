@@ -2,6 +2,8 @@ import { useContext } from "react";
 import { UserContext } from "../../context/userContext";
 import FileUpload from "../../components/FileUpload/FileUpload";
 import './Dashboard.css';
+import Navbar from '../../components/Navbar/Navbar'
+
 
 export default function Dashboard() {
     const { user, loading } = useContext(UserContext);

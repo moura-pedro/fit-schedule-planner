@@ -5,6 +5,8 @@ import { toast } from 'react-hot-toast'
 import { useNavigate } from 'react-router-dom'
 import { UserContext } from '../../context/userContext'
 import './Login.css'
+import Navbar from '../../components/Navbar/Navbar'
+
 
 function Login() {
     const navigate = useNavigate()
@@ -38,7 +40,9 @@ function Login() {
     }
 
     return (
+        
         <div className="login-container">
+          <Navbar />
             <form onSubmit={loginUser}>
                 <label>Email</label>
                 <input
