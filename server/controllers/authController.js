@@ -65,36 +65,54 @@ const loginUser = async (req, res) => {
         // Check if passwords match
         const match = await comparePassword(password, user.password)
         if (match) {
-            jwt.sign({email: user.email, id: user._id, name: user.name}, process.env.JWT_SECRET, {}, (err, token) => {
+            jwt.sign({
+                email: user.email, 
+                id: user._id, 
+                name: user.name
+            }, process.env.JWT_SECRET, {}, (err, token) => {
                 if (err) throw err;
-                res.cookie('token', token).json(user)
-            })
+                res.cookie('token', token).json({
+                    id: user._id,
+                    email: user.email,
+                    name: user.name
+                });
+            });
         } else {
             return res.json({
                 error: 'Passwords do not match'
             })
         }
-
-    
-
-        return res.json(user)
     } catch (error) {
         console.log(error)
+        res.status(500).json({ error: 'Internal server error' });
     }
 }
 
-const getProfile = (req,res) => {
-const {token} = req.cookies
-    if (token) {
-        jwt.verify(token, process.env.JWT_SECRET, {}, (err, user) => {
-            if (err) throw err;
-            res.json(user)
-        })
-    } else {
-        res.json(null)
-    }
+const getProfile = async (req, res) => {
+    try {
+        const { token } = req.cookies;
+        if (!token) {
+            return res.json(null);
+        }
 
-}
+        jwt.verify(token, process.env.JWT_SECRET, {}, async (err, decoded) => {
+            if (err) {
+                return res.json(null);
+            }
+
+            const user = await User.findById(decoded.id).select('-password');
+            if (!user) {
+                return res.json(null);
+            }
+
+            res.json(user);
+        });
+    } catch (error) {
+        console.error('Error in getProfile:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 module.exports = {
     test,
     registerUser,

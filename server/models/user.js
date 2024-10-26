@@ -5,10 +5,18 @@ const userSchema = new Schema({
     name: String,
     email: {
         type: String,
-        unique:true
+        unique: true
     },
-    password: String
-
+    password: String,
+    file: {
+        filename: String,
+        contentType: String,
+        data: Buffer,
+        uploadDate: {
+            type: Date,
+            default: Date.now
+        }
+    }
 })
 
 const UserModel = mongoose.model('User', userSchema);

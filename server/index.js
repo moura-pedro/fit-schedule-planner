@@ -18,6 +18,7 @@ app.use(express.urlencoded({extender: false}))
 
 app.use('/', require('./routes/authRoutes'))
 app.use('/api/courses', require('./routes/courseRoutes'));
+app.use('/api', require('./routes/fileRoutes'));
 
 
 const port = 8000;

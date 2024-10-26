@@ -3,7 +3,10 @@ import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import axios from 'axios';
 import { Toaster } from 'react-hot-toast';
+
 import { UserContextProvider } from './context/userContext';
+import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute';
+
 
 import Navbar from './components/Navbar/Navbar'
 import Home from './pages/Home/Home'
@@ -19,13 +22,20 @@ function App () {
   return (
     
     <UserContextProvider>
-      <Navbar />
+      {/* <Navbar /> */}
       <Toaster position='bottom-right' toastOptions={{duration:2000}} />
       <Routes>
         <Route path='/' element={<Home />} />
         <Route path='/register' element={<Register />} />
         <Route path='/login' element={<Login />} />
-        <Route path='/dashboard' element={<Dashboard />} />
+        <Route 
+          path='/dashboard' 
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/search" element={<Search />} />
       </Routes>
     </UserContextProvider>
