@@ -9,7 +9,7 @@ const Search = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedSections, setSelectedSections] = useState([]);
   const [modal, setModal] = useState(null);
-  
+
   const searchFormRef = useRef(null);
 
   const formatTimeToStandard = (militaryTime) => {
@@ -53,8 +53,8 @@ const Search = () => {
     return (start1 < end2 && start2 < end1);
   };
 
-  const timeSlots = Array.from({ length: 16 }, (_, i) => {
-    const hour = i + 7;
+  const timeSlots = Array.from({ length: 15 }, (_, i) => {
+    const hour = i + 7; // Start at 7 AM
     return {
       label: `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
       hour
@@ -151,20 +151,27 @@ const Search = () => {
     setSelectedSections(selectedSections.filter(section => section.CRN !== crn));
   };
 
-  const getBlockStyle = (timeString, courseCode) => {
+  const getBlockStyle = (timeString, courseCode, isLab = false) => {
     const timeRange = parseTimeRange(timeString);
     if (!timeRange) return null;
     
     const { start, end } = timeRange;
-    const startPosition = (start.hours - 7) + (start.minutes / 60);
-    const duration = (end.hours - start.hours) + ((end.minutes - start.minutes) / 60);
+    // Adjust calculation to match grid lines exactly
+    const startPosition = ((start.hours - 7) * 60 + start.minutes) / 60;
+    const duration = ((end.hours - start.hours) * 60 + (end.minutes - start.minutes)) / 60;
+    
+    const baseColor = Math.abs(courseCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 360;
+    const backgroundColor = isLab ? 
+      `hsl(${baseColor}, 70%, 90%)` : 
+      `hsl(${baseColor}, 70%, 85%)`;
     
     return {
       top: `${startPosition * 60}px`,
       height: `${duration * 60}px`,
-      backgroundColor: `hsl(${Math.abs(courseCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 360}, 70%, 85%)`,
+      backgroundColor,
     };
   };
+    
 
   const formatDisplayTimeAndPlace = (times, days, place) => {
     if (!times || !days || !place) return { displayTime: 'TBA', displayPlace: 'TBA' };
@@ -232,13 +239,13 @@ const Search = () => {
         </select>
         <button type="submit">Search</button>
       </form>
-  
+
       <div className="split-view">
         <div className="courses-list">
           {results.length > 0 ? (
             results.map((course) => (
-              <div 
-                key={course._id} 
+              <div
+                key={course._id}
                 className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
                 onClick={() => setSelectedCourse(course)}
               >
@@ -253,7 +260,7 @@ const Search = () => {
             <p>No results found.</p>
           )}
         </div>
-  
+
         <div className="sections-view">
           {selectedCourse ? (
             <>
@@ -265,13 +272,12 @@ const Search = () => {
                     section.Days,
                     section.Place
                   );
-                  
+
                   return (
-                    <div 
-                      key={section.CRN} 
-                      className={`section-card ${
-                        selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''
-                      }`}
+                    <div
+                      key={section.CRN}
+                      className={`section-card ${selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''
+                        }`}
                       onClick={() => handleAddSection(section)}
                     >
                       <h4>Section {section.Section}</h4>
@@ -293,7 +299,7 @@ const Search = () => {
           )}
         </div>
       </div>
-  
+
       {selectedSections.length > 0 && (
         <div className="selected-sections">
           <h2>Selected Sections</h2>
@@ -304,7 +310,7 @@ const Search = () => {
                 section.Days,
                 section.Place
               );
-              
+
               return (
                 <div key={section.CRN} className="selected-section-card">
                   <div className="selected-section-info">
@@ -315,8 +321,8 @@ const Search = () => {
                     <p>Instructor: {section.Instructor}</p>
                     <p>CRN: {section.CRN}</p>
                   </div>
-                  <button 
-                    className="remove-section" 
+                  <button
+                    className="remove-section"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleRemoveSection(section.CRN);
@@ -330,12 +336,13 @@ const Search = () => {
           </div>
         </div>
       )}
-  
+
       {selectedSections.length > 0 && (
         <div className="schedule-container">
           <h2>Weekly Schedule</h2>
           <div className="schedule-grid">
             <div className="time-column">
+              <div className="day-header">Hours</div>
               {timeSlots.map((slot) => (
                 <div key={slot.hour} className="time-slot">
                   {slot.label}
@@ -349,21 +356,30 @@ const Search = () => {
                   {selectedSections.map((section) => {
                     const allDays = section.Days.split('\n');
                     const allTimes = section.Times.split('\n');
-                    
+                    const allPlaces = section.Place.split('\n');
+
                     return allDays.map((dayString, index) => {
                       if (dayString.includes(day) && allTimes[index] !== 'TBA') {
-                        const blockStyle = getBlockStyle(allTimes[index], section.courseCode);
+                        const isLab = index === 1;
+                        const blockStyle = getBlockStyle(allTimes[index], section.courseCode, isLab);
+
                         return blockStyle && (
                           <div
                             key={`${section.CRN}-${day}-${index}`}
-                            className="course-block"
+                            className={`course-block ${isLab ? 'lab-block' : ''}`}
                             style={blockStyle}
                           >
                             <div className="course-block-content">
-                              <strong>{section.courseCode}</strong>
+                              <div>
+                                <strong>{section.courseCode} </strong>
+                                <span>  {isLab ? '(Lab)' : ''}</span>
+                              </div>
+                              
                               <div className="course-block-details">
-                                <span>Section {section.Section}</span>
+                                {/* <span>Section {section.Section}</span> */}
                                 <span>{formatTimeToStandard(allTimes[index])}</span>
+                                
+                                {/* <span>{allPlaces[index]}</span> */}
                               </div>
                             </div>
                           </div>
@@ -378,7 +394,7 @@ const Search = () => {
           </div>
         </div>
       )}
-      
+
       <Modal />
     </div>
   );
