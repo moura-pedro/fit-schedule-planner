@@ -1,9 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const cors = require('cors');
-const { searchCourses } = require('../controllers/courseController');
+const { searchCourses, getPrerequisites } = require('../controllers/courseController');
 
-// middleware
 router.use(
     cors({
         credentials: true,
@@ -12,6 +11,6 @@ router.use(
 );
 
 router.get('/search', searchCourses);
-
+router.get('/prerequisites', getPrerequisites);
 
 module.exports = router;
