@@ -13,11 +13,9 @@ const Search = () => {
   const searchFormRef = useRef(null);
 
   const formatTimeToStandard = (militaryTime) => {
-    const hour = parseInt(militaryTime.substring(0, 2));
-    const minutes = militaryTime.substring(2);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    const standardHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-    return `${standardHour}:${minutes} ${period}`;
+    if (!militaryTime) return 'TBA';
+    const [start, end] = militaryTime.split('-');
+    return `${formatSingleTime(start)} - ${formatSingleTime(end)}`;
   };
 
   const parseMilitaryTime = (timeString) => {
@@ -168,10 +166,30 @@ const Search = () => {
     };
   };
 
-  const formatDisplayTime = (timeString) => {
-    if (!timeString || timeString === 'TBA') return 'TBA';
-    const [start, end] = timeString.split('-');
-    return `${formatTimeToStandard(start)} - ${formatTimeToStandard(end)}`;
+  const formatDisplayTimeAndPlace = (times, days, place) => {
+    if (!times || !days || !place) return { displayTime: 'TBA', displayPlace: 'TBA' };
+
+    const timesList = times.split('\n');
+    const daysList = days.split('\n');
+    const placesList = place.split('\n');
+
+    let displayTime = formatTimeToStandard(timesList[0]);
+    let displayPlace = placesList[0];
+
+    if (timesList.length > 1) {
+      displayTime += ` (Lab ${formatTimeToStandard(timesList[1])})`;
+      displayPlace += ` (Lab ${placesList[1]})`;
+    }
+
+    return { displayTime, displayPlace };
+  };
+
+  const formatSingleTime = (time) => {
+    const hour = parseInt(time.substring(0, 2));
+    const minutes = time.substring(2);
+    const period = hour >= 12 ? 'PM' : 'AM';
+    const standardHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+    return `${standardHour}:${minutes} ${period}`;
   };
 
   const Modal = () => {
@@ -214,46 +232,58 @@ const Search = () => {
         </select>
         <button type="submit">Search</button>
       </form>
-
+  
       <div className="split-view">
         <div className="courses-list">
-          {results.map((course) => (
-            <div 
-              key={course._id} 
-              className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
-              onClick={() => setSelectedCourse(course)}
-            >
-              <h3 className="course-title">{course.Course}: {course.Title}</h3>
-              <div className="course-details">
-                <p>Credits: {course.Credits}</p>
-                <p>Prerequisites: {course.Prerequisites || 'None'}</p>
+          {results.length > 0 ? (
+            results.map((course) => (
+              <div 
+                key={course._id} 
+                className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
+                onClick={() => setSelectedCourse(course)}
+              >
+                <h3 className="course-title">{course.Course}: {course.Title}</h3>
+                <div className="course-details">
+                  <p>Credits: {course.Credits}</p>
+                  <p>Prerequisites: {course.Prerequisites || 'None'}</p>
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p>No results found.</p>
+          )}
         </div>
-
+  
         <div className="sections-view">
           {selectedCourse ? (
             <>
               <h2 className="sections-title">Sections for {selectedCourse.Course}</h2>
               <div className="sections-list">
-                {selectedCourse.Sections?.map((section) => (
-                  <div 
-                    key={section.CRN} 
-                    className={`section-card ${
-                      selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''
-                    }`}
-                    onClick={() => handleAddSection(section)}
-                  >
-                    <h4>Section {section.Section}</h4>
-                    <p>Days: {section.Days}</p>
-                    <p>Time: {formatDisplayTime(section.Times)}</p>
-                    <p>Instructor: {section.Instructor}</p>
-                    <p>Capacity: {section.Capacity}</p>
-                    <p>Place: {section.Place}</p>
-                    <p>CRN: {section.CRN}</p>
-                  </div>
-                ))}
+                {selectedCourse.Sections?.map((section) => {
+                  const { displayTime, displayPlace } = formatDisplayTimeAndPlace(
+                    section.Times,
+                    section.Days,
+                    section.Place
+                  );
+                  
+                  return (
+                    <div 
+                      key={section.CRN} 
+                      className={`section-card ${
+                        selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''
+                      }`}
+                      onClick={() => handleAddSection(section)}
+                    >
+                      <h4>Section {section.Section}</h4>
+                      <p>Days: {section.Days.replace('\n', ' ')}</p>
+                      <p>Time: {displayTime}</p>
+                      <p>Place: {displayPlace}</p>
+                      <p>Instructor: {section.Instructor}</p>
+                      <p>Capacity: {section.Capacity}</p>
+                      <p>CRN: {section.CRN}</p>
+                    </div>
+                  );
+                })}
               </div>
             </>
           ) : (
@@ -263,34 +293,44 @@ const Search = () => {
           )}
         </div>
       </div>
-
+  
       {selectedSections.length > 0 && (
         <div className="selected-sections">
           <h2>Selected Sections</h2>
           <div className="selected-sections-list">
-            {selectedSections.map((section) => (
-              <div key={section.CRN} className="selected-section-card">
-                <div className="selected-section-info">
-                  <h4>{section.courseCode}: {section.courseTitle}</h4>
-                  <p>Section {section.Section} | {section.Days} at {formatDisplayTime(section.Times)}</p>
-                  <p>Instructor: {section.Instructor}</p>
-                  <p>CRN: {section.CRN}</p>
+            {selectedSections.map((section) => {
+              const { displayTime, displayPlace } = formatDisplayTimeAndPlace(
+                section.Times,
+                section.Days,
+                section.Place
+              );
+              
+              return (
+                <div key={section.CRN} className="selected-section-card">
+                  <div className="selected-section-info">
+                    <h4>{section.courseCode}: {section.courseTitle}</h4>
+                    <p>Section {section.Section} | {section.Days.replace('\n', ' ')}</p>
+                    <p>Time: {displayTime}</p>
+                    <p>Place: {displayPlace}</p>
+                    <p>Instructor: {section.Instructor}</p>
+                    <p>CRN: {section.CRN}</p>
+                  </div>
+                  <button 
+                    className="remove-section" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRemoveSection(section.CRN);
+                    }}
+                  >
+                    Remove
+                  </button>
                 </div>
-                <button 
-                  className="remove-section" 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRemoveSection(section.CRN);
-                  }}
-                >
-                  Remove
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
-
+  
       {selectedSections.length > 0 && (
         <div className="schedule-container">
           <h2>Weekly Schedule</h2>
@@ -307,25 +347,30 @@ const Search = () => {
                 <div className="day-header">{dayLabels[day]}</div>
                 <div className="day-slots">
                   {selectedSections.map((section) => {
-                    if (section.Days.includes(day) && section.Times !== 'TBA') {
-                      const blockStyle = getBlockStyle(section.Times, section.courseCode);
-                      return blockStyle && (
-                        <div
-                          key={`${section.CRN}-${day}`}
-                          className="course-block"
-                          style={blockStyle}
-                        >
-                          <div className="course-block-content">
-                            <strong>{section.courseCode}</strong>
-                            <div className="course-block-details">
-                              <span>Section {section.Section}</span>
-                              <span>{formatDisplayTime(section.Times)}</span>
+                    const allDays = section.Days.split('\n');
+                    const allTimes = section.Times.split('\n');
+                    
+                    return allDays.map((dayString, index) => {
+                      if (dayString.includes(day) && allTimes[index] !== 'TBA') {
+                        const blockStyle = getBlockStyle(allTimes[index], section.courseCode);
+                        return blockStyle && (
+                          <div
+                            key={`${section.CRN}-${day}-${index}`}
+                            className="course-block"
+                            style={blockStyle}
+                          >
+                            <div className="course-block-content">
+                              <strong>{section.courseCode}</strong>
+                              <div className="course-block-details">
+                                <span>Section {section.Section}</span>
+                                <span>{formatTimeToStandard(allTimes[index])}</span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      );
-                    }
-                    return null;
+                        );
+                      }
+                      return null;
+                    });
                   })}
                 </div>
               </div>
@@ -337,6 +382,6 @@ const Search = () => {
       <Modal />
     </div>
   );
-};
+}
 
 export default Search;
