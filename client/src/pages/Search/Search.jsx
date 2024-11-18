@@ -36,13 +36,13 @@ const Search = () => {
   };
 
   const hasTimeConflict = (section1, section2) => {
-    if (section1.Times === 'TBA' || section2.Times === 'TBA') return false;
+    if (!section1.Times || !section2.Times || section1.Times === 'TBA' || section2.Times === 'TBA') return false;
 
     const time1 = parseTimeRange(section1.Times);
     const time2 = parseTimeRange(section2.Times);
 
-    const days1 = section1.Days.split('');
-    const days2 = section2.Days.split('');
+    const days1 = section1.Days.split('\n').join('').split('');
+    const days2 = section2.Days.split('\n').join('').split('');
     const sharedDays = days1.some(day => days2.includes(day));
 
     if (!sharedDays) return false;
@@ -75,14 +75,12 @@ const Search = () => {
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
-      console.log('Searching for:', query, 'on day:', selectedDay);
       const { data } = await axios.get('http://localhost:8000/api/courses/search', {
         params: {
           query: query,
           filter_day: selectedDay,
         },
       });
-      console.log('Search results:', data);
       setResults(data);
       setSelectedCourse(null);
     } catch (error) {
@@ -90,12 +88,6 @@ const Search = () => {
     }
   };
 
-  const sortedResults = results.sort((a, b) => {
-    if (a.Course === b.Course) {
-      return a.Title.localeCompare(b.Title);
-    }
-    return a.Course.localeCompare(b.Course);
-  });
 
   const handleAddSection = async (section) => {
     const courseExists = selectedSections.some(
@@ -120,7 +112,8 @@ const Search = () => {
       return;
     }
 
-    if (section.Enrolled >= section["Max Capacity"]) {
+    const [enrolled, maxCapacity] = section.Capacity.split('/').map(Number);
+    if (enrolled >= maxCapacity) {
       setModal({
         type: 'confirm',
         message: 'This section is full. Do you still want to add it?',
@@ -134,7 +127,7 @@ const Search = () => {
   };
 
   const checkPrerequisites = (section) => {
-    if (selectedCourse.Prerequisites && selectedCourse.Prerequisites !== 'None') {
+    if (selectedCourse.Prerequisites) {
       setModal({
         type: 'confirm',
         message: `This course has prerequisites: ${selectedCourse.Prerequisites}. Do you still want to add it?`,
@@ -224,23 +217,19 @@ const Search = () => {
 
       <div className="split-view">
         <div className="courses-list">
-          {sortedResults.length > 0 ? (
-            sortedResults.map((course) => (
-              <div 
-                key={course._id} 
-                className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
-                onClick={() => setSelectedCourse(course)}
-              >
-                <h3 className="course-title">{course.Course}: {course.Title}</h3>
-                <div className="course-details">
-                  <p>Credits: {course.Credits}</p>
-                  <p>Prerequisites: {course.Prerequisites || 'None'}</p>
-                </div>
+          {results.map((course) => (
+            <div 
+              key={course._id} 
+              className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
+              onClick={() => setSelectedCourse(course)}
+            >
+              <h3 className="course-title">{course.Course}: {course.Title}</h3>
+              <div className="course-details">
+                <p>Credits: {course.Credits}</p>
+                <p>Prerequisites: {course.Prerequisites || 'None'}</p>
               </div>
-            ))
-          ) : (
-            <p>No results found.</p>
-          )}
+            </div>
+          ))}
         </div>
 
         <div className="sections-view">
@@ -248,7 +237,7 @@ const Search = () => {
             <>
               <h2 className="sections-title">Sections for {selectedCourse.Course}</h2>
               <div className="sections-list">
-                {selectedCourse.sections.map((section) => (
+                {selectedCourse.Sections?.map((section) => (
                   <div 
                     key={section.CRN} 
                     className={`section-card ${
@@ -260,7 +249,8 @@ const Search = () => {
                     <p>Days: {section.Days}</p>
                     <p>Time: {formatDisplayTime(section.Times)}</p>
                     <p>Instructor: {section.Instructor}</p>
-                    <p>Enrollment: {section.Enrolled}/{section["Max Capacity"]}</p>
+                    <p>Capacity: {section.Capacity}</p>
+                    <p>Place: {section.Place}</p>
                     <p>CRN: {section.CRN}</p>
                   </div>
                 ))}

@@ -11,6 +11,7 @@ export default function Dashboard() {
     if (loading) {
         return (
             <div className="dashboard-container">
+                <Navbar/>
                 <div className="dashboard-content">
                     <div className="status-message">Loading...</div>
                 </div>
@@ -20,6 +21,7 @@ export default function Dashboard() {
 
     return (
         <div className="dashboard-container">
+            <Navbar/>
             <div className="dashboard-content">
                 <div className="dashboard-header">
                     <h1>Dashboard</h1>

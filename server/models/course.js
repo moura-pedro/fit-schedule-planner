@@ -1,5 +1,5 @@
-const { mongoose } = require('mongoose')
-const { Schema } = mongoose
+const { mongoose } = require('mongoose');
+const { Schema } = mongoose;
 
 const sectionSchema = new Schema({
   CRN: String,
@@ -8,18 +8,17 @@ const sectionSchema = new Schema({
   Times: String,
   Place: String,
   Instructor: String,
-  Enrolled: Number,
-  MaxCapacity: Number,
+  Capacity: String
 });
 
 const courseSchema = new Schema({
   Course: String,
-  Credits: Number,
+  Credits: String,
   Title: String,
   Prerequisites: String,
   Requirements: String,
-  sections: [sectionSchema],
+  Sections: [sectionSchema]
 });
 
 const CourseModel = mongoose.model('classes', courseSchema);
-module.exports = CourseModel
+module.exports = CourseModel;
