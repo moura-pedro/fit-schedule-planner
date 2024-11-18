@@ -269,6 +269,22 @@
     text-overflow: ellipsis;
 }
 
+.lab-block {
+  border-left: 3px solid rgba(0, 0, 0, 0.2);
+}
+
+.course-block-details {
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.course-block-details span {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;

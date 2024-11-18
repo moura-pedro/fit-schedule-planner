@@ -1,0 +1,351 @@
+/* client/src/pages/PrerequisiteTree/PrerequisiteTree.css */
+.prerequisite-tree-container {
+    font-family: Arial, sans-serif;
+    background-color: #CBCCCE;
+    color: #333;
+    min-height: 100vh;
+    padding-top: 90px;
+}
+
+.prerequisite-tree-content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 30px;
+}
+
+.search-section {
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+}
+
+.search-section h1 {
+    font-size: 2.5rem;
+    color: #770000;
+    margin-bottom: 20px;
+}
+
+.search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #CBCCCE;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.search-button {
+    padding: 12px 25px;
+    background-color: #770000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+}
+
+.search-button:hover {
+    background-color: #AB946C;
+}
+
+.search-button:disabled {
+    background-color: #CBCCCE;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #fff3f3;
+    border-radius: 4px;
+    border: 1px solid #ffcdd2;
+}
+
+.tree-section {
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.tree-section h2 {
+    color: #770000;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #CBCCCE;
+}
+
+/* Zoom Controls */
+.zoom-controls {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: white;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.zoom-button {
+    background-color: #770000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.zoom-button:hover {
+    background-color: #AB946C;
+}
+
+.zoom-button:disabled {
+    background-color: #CBCCCE;
+    cursor: not-allowed;
+}
+
+.zoom-level {
+    font-size: 14px;
+    font-weight: bold;
+    color: #333;
+    min-width: 60px;
+    text-align: center;
+}
+
+/* Tree Container and Visualization */
+.tree-container {
+    height: 600px;
+    position: relative;
+    overflow: hidden;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    margin-top: 20px;
+    border: 1px solid #CBCCCE;
+}
+
+.tree-visualization {
+    position: absolute;
+    transform-origin: center top;
+    transition: transform 0.1s ease;
+    padding: 40px;
+    user-select: none;
+}
+
+/* Tree Structure */
+.tree-node-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+}
+
+.root-node {
+    margin-bottom: 60px;
+}
+
+.node-circle {
+    width: 150px;
+    height: 150px;
+    background-color: #770000;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    position: relative;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.node-circle:hover {
+    transform: scale(1.05);
+    background-color: #AB946C;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.node-content {
+    text-align: center;
+    padding: 15px;
+}
+
+.course-code {
+    font-weight: bold;
+    font-size: 1.2rem;
+    margin-bottom: 8px;
+}
+
+.course-title {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    word-wrap: break-word;
+    max-width: 120px;
+    line-height: 1.2;
+}
+
+.node-children {
+    display: flex;
+    gap: 40px;
+    padding-top: 60px;
+    position: relative;
+}
+
+/* Connecting Lines */
+/* Base connecting line from parent to children container */
+.node-children::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 60px;
+    background-color: #770000;
+    z-index: 1;
+}
+
+/* Vertical lines for each child */
+.node-children > .tree-node-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 30px;
+    background-color: #770000;
+    z-index: 1;
+}
+
+/* Horizontal connecting lines */
+/* For nodes between first and last (middle nodes) */
+.node-children > .tree-node-wrapper:not(:first-child):not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: -20px;
+    width: calc(100% + 40px);
+    height: 2px;
+    background-color: #770000;
+    z-index: 1;
+}
+
+/* For first node in a group - only draw line to the right if there are siblings */
+.node-children > .tree-node-wrapper:first-child:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    width: calc(50% + 20px);
+    height: 2px;
+    background-color: #770000;
+    z-index: 1;
+}
+
+/* For last node in a group - only draw line to the left if there are siblings */
+.node-children > .tree-node-wrapper:last-child:not(:first-child)::after {
+    content: '';
+    position: absolute;
+    top: -30px;
+    right: 50%;
+    width: calc(50% + 20px);
+    height: 2px;
+    background-color: #770000;
+    z-index: 1;
+}
+
+/* Remove the standalone horizontal lines when there's only one child */
+.node-children > .tree-node-wrapper:first-child:last-child::after {
+    display: none;
+}
+
+/* Touch Support */
+@media (hover: none) and (pointer: coarse) {
+    .tree-container {
+        touch-action: none;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .prerequisite-tree-content {
+        padding: 15px;
+    }
+    
+    .search-section h1 {
+        font-size: 2rem;
+    }
+    
+    .search-box {
+        flex-direction: column;
+    }
+    
+    .search-button {
+        width: 100%;
+    }
+
+    .tree-container {
+        height: 400px;
+    }
+    
+    .node-circle {
+        width: 120px;
+        height: 120px;
+    }
+    
+    .course-code {
+        font-size: 1rem;
+    }
+    
+    .course-title {
+        font-size: 0.8rem;
+        max-width: 100px;
+    }
+    
+    .node-children {
+        gap: 20px;
+    }
+    
+    .zoom-controls {
+        top: 10px;
+        right: 10px;
+    }
+}
+
+
+/* Print styles */
+@media print {
+    .tree-container {
+        height: auto;
+        overflow: visible;
+    }
+    
+    .tree-visualization {
+        position: relative;
+        transform: none !important;
+    }
+    
+    .zoom-controls {
+        display: none;
+    }
+}
