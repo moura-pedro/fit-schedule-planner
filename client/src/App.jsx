@@ -14,6 +14,7 @@ import Register from './pages/Register/Register';
 import Login from './pages/Login/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Search from './pages/Search/Search';
+import PrerequisiteTree from './pages/PrerequisiteTree/PrerequisiteTree';
 
 axios.defaults.baseURL = 'http://localhost:8000'
 axios.defaults.withCredentials = true
@@ -37,6 +38,9 @@ function App () {
           } 
         />
         <Route path="/search" element={<Search />} />
+        <Route path="/prerequisite-tree" element={<PrerequisiteTree />} />
+
+
       </Routes>
     </UserContextProvider>
   )
