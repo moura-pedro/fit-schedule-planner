@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './Search.css';
 
@@ -9,8 +9,38 @@ const Search = () => {
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedSections, setSelectedSections] = useState([]);
   const [modal, setModal] = useState(null);
+  const [sectionColors, setSectionColors] = useState(new Map());
 
   const searchFormRef = useRef(null);
+
+  const generateUniqueColors = (sections) => {
+    const colorMap = new Map();
+
+    sections.forEach((section) => {
+      const hash = section.CRN.split('').reduce(
+        (acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0
+      );
+
+      const hue = Math.abs(hash % 360);
+      const saturation = 70 + (hash % 20);
+      const lightness = 80 + (hash % 10);
+
+      colorMap.set(section.CRN, {
+        backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+        borderColor: `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`,
+        textColor: hue > 200 && lightness > 85 ? '#333' : '#fff'
+      });
+    });
+
+    return colorMap;
+  };
+
+  useEffect(() => {
+    if (selectedSections.length > 0) {
+      const newColors = generateUniqueColors(selectedSections);
+      setSectionColors(newColors);
+    }
+  }, [selectedSections]);
 
   const formatTimeToStandard = (militaryTime) => {
     if (!militaryTime) return 'TBA';
@@ -86,7 +116,6 @@ const Search = () => {
     }
   };
 
-
   const handleAddSection = async (section) => {
     const courseExists = selectedSections.some(
       selected => selected.courseCode === selectedCourse.Course
@@ -151,27 +180,31 @@ const Search = () => {
     setSelectedSections(selectedSections.filter(section => section.CRN !== crn));
   };
 
-  const getBlockStyle = (timeString, courseCode, isLab = false) => {
+  const getBlockStyle = (timeString, sectionCRN, isLab = false) => {
     const timeRange = parseTimeRange(timeString);
     if (!timeRange) return null;
-    
+
     const { start, end } = timeRange;
-    // Adjust calculation to match grid lines exactly
     const startPosition = ((start.hours - 7) * 60 + start.minutes) / 60;
     const duration = ((end.hours - start.hours) * 60 + (end.minutes - start.minutes)) / 60;
-    
-    const baseColor = Math.abs(courseCode.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)) % 360;
-    const backgroundColor = isLab ? 
-      `hsl(${baseColor}, 70%, 90%)` : 
-      `hsl(${baseColor}, 70%, 85%)`;
-    
+
+    // Get the pre-generated colors for this section
+    const colors = sectionColors.get(sectionCRN) || {
+      backgroundColor: '#e2e8f0',
+      borderColor: '#cbd5e1',
+      textColor: '#333'
+    };
+
     return {
       top: `${startPosition * 60}px`,
       height: `${duration * 60}px`,
-      backgroundColor,
+      backgroundColor: colors.backgroundColor,
+      color: colors.textColor,
+      borderLeft: isLab ? `4px solid ${colors.borderColor}` : `2px solid ${colors.borderColor}`,
+      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+      transition: 'transform 0.2s, box-shadow 0.2s',
     };
   };
-    
 
   const formatDisplayTimeAndPlace = (times, days, place) => {
     if (!times || !days || !place) return { displayTime: 'TBA', displayPlace: 'TBA' };
@@ -276,8 +309,7 @@ const Search = () => {
                   return (
                     <div
                       key={section.CRN}
-                      className={`section-card ${selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''
-                        }`}
+                      className={`section-card ${selectedSections.some(s => s.CRN === section.CRN) ? 'selected' : ''}`}
                       onClick={() => handleAddSection(section)}
                     >
                       <h4>Section {section.Section}</h4>
@@ -349,6 +381,7 @@ const Search = () => {
                 </div>
               ))}
             </div>
+
             {days.map((day) => (
               <div key={day} className="day-column">
                 <div className="day-header">{dayLabels[day]}</div>
@@ -361,7 +394,7 @@ const Search = () => {
                     return allDays.map((dayString, index) => {
                       if (dayString.includes(day) && allTimes[index] !== 'TBA') {
                         const isLab = index === 1;
-                        const blockStyle = getBlockStyle(allTimes[index], section.courseCode, isLab);
+                        const blockStyle = getBlockStyle(allTimes[index], section.CRN, isLab);
 
                         return blockStyle && (
                           <div
@@ -370,16 +403,13 @@ const Search = () => {
                             style={blockStyle}
                           >
                             <div className="course-block-content">
-                              <div>
-                                <strong>{section.courseCode} </strong>
-                                <span>  {isLab ? '(Lab)' : ''}</span>
+                              <div className="course-block-title">
+                                <strong>{section.courseCode}</strong>
+                                {isLab && <span className="lab-indicator"> (Lab)</span>}
                               </div>
-                              
                               <div className="course-block-details">
-                                {/* <span>Section {section.Section}</span> */}
                                 <span>{formatTimeToStandard(allTimes[index])}</span>
-                                
-                                {/* <span>{allPlaces[index]}</span> */}
+                                <span className="location">{allPlaces[index]}</span>
                               </div>
                             </div>
                           </div>
