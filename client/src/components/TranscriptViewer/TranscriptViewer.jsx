@@ -15,35 +15,67 @@ const TranscriptViewer = () => {
 
     const fetchTranscript = async () => {
         try {
-            const response = await axios.get('http://localhost:8000/api/transcript');
-            setTranscript(response.data.transcript);
-            setError(null);
+            const response = await axios.get('http://localhost:8000/api/transcript', {
+                withCredentials: true
+            });
+            
+            if (response.data.transcript) {
+                // Ensure overallTotals exists with default values
+                const transcriptData = {
+                    ...response.data.transcript,
+                    overallTotals: response.data.transcript.overallTotals || {
+                        attemptHours: 0,
+                        passedHours: 0,
+                        earnedHours: 0,
+                        gpaHours: 0,
+                        qualityPoints: 0,
+                        gpa: 0
+                    }
+                };
+                setTranscript(transcriptData);
+                setError(null);
+            } else {
+                setError('No transcript data available');
+            }
         } catch (err) {
-            setError('Failed to load transcript data');
             console.error('Error fetching transcript:', err);
+            setError(err.response?.data?.error || 'Failed to load transcript data');
         } finally {
             setLoading(false);
         }
     };
 
-    const calculateGPA = (courses) => {
-        const completedCourses = courses.filter(course => course.status === 'completed' && course.grade !== 'W' && course.grade !== 'P');
-        const totalPoints = completedCourses.reduce((sum, course) => sum + course.qualityPoints, 0);
-        const totalHours = completedCourses.reduce((sum, course) => sum + course.creditHours, 0);
-        return totalHours === 0 ? 0 : (totalPoints / totalHours).toFixed(2);
-    };
-
     const getGradeColor = (grade) => {
-        const gradeColors = {
+        const colors = {
             'A': '#4CAF50',
             'B': '#8BC34A',
             'C': '#FFC107',
             'D': '#FF9800',
             'F': '#f44336',
             'W': '#9E9E9E',
-            'P': '#2196F3'
+            'P': '#2196F3',
+            'IP': '#673AB7'
         };
-        return gradeColors[grade?.charAt(0)] || '#000000';
+        return colors[grade?.charAt(0)] || '#000000';
+    };
+
+    const calculateOverallStats = (courses) => {
+        const completedCourses = courses.filter(course => 
+            course.status === 'completed' && 
+            course.grade !== 'W' && 
+            course.grade !== 'P'
+        );
+
+        return {
+            attemptHours: courses.reduce((sum, course) => sum + (course.creditHours || 0), 0),
+            passedHours: completedCourses.reduce((sum, course) => sum + (course.creditHours || 0), 0),
+            earnedHours: completedCourses.reduce((sum, course) => sum + (course.creditHours || 0), 0),
+            gpaHours: completedCourses.reduce((sum, course) => sum + (course.creditHours || 0), 0),
+            qualityPoints: completedCourses.reduce((sum, course) => sum + (course.qualityPoints || 0), 0),
+            gpa: completedCourses.length ? 
+                (completedCourses.reduce((sum, course) => sum + (course.qualityPoints || 0), 0) / 
+                completedCourses.reduce((sum, course) => sum + (course.creditHours || 0), 0)) : 0
+        };
     };
 
     if (loading) {
@@ -58,6 +90,9 @@ const TranscriptViewer = () => {
         return <div className="transcript-empty">No transcript data available</div>;
     }
 
+    const { studentInfo = {}, courses = [] } = transcript;
+    const stats = calculateOverallStats(courses);
+
     return (
         <div className="transcript-container">
             <div className="student-info">
@@ -65,23 +100,27 @@ const TranscriptViewer = () => {
                 <div className="info-grid">
                     <div className="info-item">
                         <label>Name:</label>
-                        <span>{transcript.studentInfo.name}</span>
+                        <span>{studentInfo.name || 'N/A'}</span>
+                    </div>
+                    <div className="info-item">
+                        <label>Student ID:</label>
+                        <span>{studentInfo.studentId || 'N/A'}</span>
                     </div>
                     <div className="info-item">
                         <label>Program:</label>
-                        <span>{transcript.studentInfo.program}</span>
+                        <span>{studentInfo.program || 'N/A'}</span>
                     </div>
                     <div className="info-item">
                         <label>Major:</label>
-                        <span>{transcript.studentInfo.major}</span>
+                        <span>{studentInfo.major || 'N/A'}</span>
                     </div>
                     <div className="info-item">
                         <label>College:</label>
-                        <span>{transcript.studentInfo.college}</span>
+                        <span>{studentInfo.college || 'N/A'}</span>
                     </div>
                     <div className="info-item">
                         <label>Cumulative GPA:</label>
-                        <span>{calculateGPA(transcript.courses)}</span>
+                        <span>{(studentInfo.cumulativeGPA || stats.gpa || 0).toFixed(2)}</span>
                     </div>
                 </div>
             </div>
@@ -117,12 +156,14 @@ const TranscriptViewer = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {transcript.courses.map((course, index) => (
+                                {courses
+                                    .sort((a, b) => (a.term || '').localeCompare(b.term || ''))
+                                    .map((course, index) => (
                                     <tr key={index} className={course.status === 'in-progress' ? 'in-progress' : ''}>
-                                        <td>{course.term}</td>
+                                        <td>{course.term || 'N/A'}</td>
                                         <td>{course.subject} {course.courseCode}</td>
-                                        <td>{course.title}</td>
-                                        <td>{course.creditHours}</td>
+                                        <td>{course.title || 'N/A'}</td>
+                                        <td>{(course.creditHours || 0).toFixed(3)}</td>
                                         <td>
                                             <span 
                                                 className="grade-pill"
@@ -131,7 +172,7 @@ const TranscriptViewer = () => {
                                                 {course.grade || 'IP'}
                                             </span>
                                         </td>
-                                        <td>{course.qualityPoints || '-'}</td>
+                                        <td>{course.qualityPoints ? course.qualityPoints.toFixed(2) : '-'}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -143,30 +184,30 @@ const TranscriptViewer = () => {
             {activeTab === 'progress' && (
                 <div className="progress-section">
                     <h3>Academic Progress</h3>
-                    <div className="term-totals">
-                        {transcript.termTotals.map((term, index) => (
-                            <div key={index} className="term-total-card">
-                                <h4>Term {index + 1}</h4>
-                                <div className="term-stats">
-                                    <div className="stat-item">
-                                        <label>Attempted Hours:</label>
-                                        <span>{term.attemptHours}</span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <label>Earned Hours:</label>
-                                        <span>{term.earnedHours}</span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <label>GPA Hours:</label>
-                                        <span>{term.gpaHours}</span>
-                                    </div>
-                                    <div className="stat-item">
-                                        <label>Term GPA:</label>
-                                        <span>{term.gpa}</span>
-                                    </div>
+                    <div className="progress-stats">
+                        <div className="stat-card">
+                            <h4>Total Hours</h4>
+                            <div className="stat-grid">
+                                <div className="stat-item">
+                                    <label>Attempted:</label>
+                                    <span>{stats.attemptHours.toFixed(1)}</span>
+                                </div>
+                                <div className="stat-item">
+                                    <label>Passed:</label>
+                                    <span>{stats.passedHours.toFixed(1)}</span>
+                                </div>
+                                <div className="stat-item">
+                                    <label>Earned:</label>
+                                    <span>{stats.earnedHours.toFixed(1)}</span>
                                 </div>
                             </div>
-                        ))}
+                        </div>
+                        <div className="stat-card">
+                            <h4>Overall GPA</h4>
+                            <div className="gpa-display">
+                                {stats.gpa.toFixed(2)}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

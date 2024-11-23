@@ -11,11 +11,14 @@ class TranscriptParser {
             const pdfData = await pdfParse(this.buffer);
             const content = pdfData.text;
             
+            const studentInfo = this.parseStudentInfo(content);
+            const courses = this.parseCourses(content);
+            const overallTotals = this.parseOverallTotals(content);
+
             return {
-                studentInfo: this.parseStudentInfo(content),
-                courses: this.parseCourses(content),
-                termTotals: this.parseTermTotals(content),
-                overallTotals: this.parseOverallTotals(content)
+                studentInfo,
+                courses,
+                overallTotals
             };
         } catch (error) {
             console.error('Error parsing PDF:', error);
@@ -24,31 +27,48 @@ class TranscriptParser {
     }
 
     parseStudentInfo(content) {
-        const nameMatch = content.match(/Name\s*:\s*(.*?)(?=\n)/);
-        const programMatch = content.match(/Program:\s*(.*?)(?=\n)/);
-        const collegeMatch = content.match(/College:\s*(.*?)(?=\n)/);
-        const majorMatch = content.match(/Major[^:]*:\s*(.*?)(?=\n)/);
+        const studentIdMatch = content.match(/(\d{9})\s+([^\n]+)/);
+        const nameMatch = content.match(/Name\s*:\s*([^\n]+)/);
+        const programMatch = content.match(/Program:\s*([^\n]+)/);
+        const collegeMatch = content.match(/College:\s*([^\n]+)/);
+        const majorMatch = content.match(/Major and Department:\s*([^\n]+)/);
+
+        // Calculate GPA from overall totals section
+        const gpaMatch = content.match(/Overall:[\s\S]*?(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)/);
+        const cumulativeGPA = gpaMatch ? parseFloat(gpaMatch[6]) : 0;
 
         return {
+            studentId: studentIdMatch ? studentIdMatch[1] : '',
             name: nameMatch ? nameMatch[1].trim() : '',
             program: programMatch ? programMatch[1].trim() : '',
             college: collegeMatch ? collegeMatch[1].trim() : '',
-            major: majorMatch ? majorMatch[1].trim() : ''
+            major: majorMatch ? majorMatch[1].trim() : '',
+            cumulativeGPA
         };
     }
 
     parseCourses(content) {
         const courses = [];
-        const terms = content.split(/Term: /g);
+        // Split content into terms
+        const termSections = content.split(/Term: /g);
         
-        terms.slice(1).forEach(termSection => {
+        termSections.slice(1).forEach(termSection => {
+            // Get term name
             const termMatch = termSection.match(/^([^\n]+)/);
-            const term = termMatch ? termMatch[1].trim() : '';
+            if (!termMatch) return;
             
-            // Skip if this is not a valid term section
-            if (!term || term.includes('TRANSCRIPT TOTALS')) return;
+            const term = termMatch[1].trim();
+            if (term.includes('TRANSCRIPT TOTALS')) return;
 
-            // Extract course information using regex
+            // Find academic standing
+            const standingMatch = termSection.match(/Academic Standing:\s*([^\n]+)/);
+            const additionalStandingMatch = termSection.match(/Additional Standing:\s*([^\n]+)/);
+            const standing = {
+                academic: standingMatch ? standingMatch[1].trim() : '',
+                additional: additionalStandingMatch ? additionalStandingMatch[1].trim() : ''
+            };
+
+            // Parse courses using more precise regex
             const coursePattern = /(\w+)\s+(\d+)\s+(\d+)\s+([^\n]+?)\s+([A-Z][+-]?|W|P)\s+(\d+\.\d+)\s+(\d+\.\d+)?/g;
             let match;
 
@@ -62,22 +82,25 @@ class TranscriptParser {
                     grade: match[5],
                     creditHours: parseFloat(match[6]),
                     qualityPoints: match[7] ? parseFloat(match[7]) : null,
+                    standing,
                     status: 'completed'
                 });
             }
         });
 
         // Parse courses in progress
-        const inProgressMatch = content.match(/COURSES IN PROGRESS[\s\S]*?Term: ([^\n]+)([\s\S]*?)(?=\n\n|$)/);
-        if (inProgressMatch) {
-            const inProgressTerm = inProgressMatch[1];
-            const inProgressSection = inProgressMatch[2];
+        const inProgressSection = content.split('COURSES IN PROGRESS')[1];
+        if (inProgressSection) {
+            const currentTermMatch = inProgressSection.match(/Term:\s*([^\n]+)/);
+            const currentTerm = currentTermMatch ? currentTermMatch[1].trim() : 'Current Term';
+
+            // Different regex for in-progress courses
             const inProgressPattern = /(\w+)\s+(\d+)\s+(\d+)\s+([^\n]+?)\s+(\d+\.\d+)/g;
-            
             let match;
+
             while ((match = inProgressPattern.exec(inProgressSection)) !== null) {
                 courses.push({
-                    term: inProgressTerm,
+                    term: currentTerm,
                     subject: match[1],
                     courseCode: match[2],
                     level: match[3],
@@ -93,43 +116,17 @@ class TranscriptParser {
         return courses;
     }
 
-    parseTermTotals(content) {
-        const termTotals = [];
-        const terms = content.split(/Term Totals \(Undergraduate\)/g);
-
-        terms.slice(1).forEach(termSection => {
-            const lines = termSection.split('\n');
-            const currentTermLine = lines.find(line => line.includes('Current Term:'));
-            
-            if (currentTermLine) {
-                const numbers = currentTermLine.match(/[\d.]+/g);
-                if (numbers && numbers.length >= 6) {
-                    termTotals.push({
-                        attemptHours: parseFloat(numbers[0]),
-                        passedHours: parseFloat(numbers[1]),
-                        earnedHours: parseFloat(numbers[2]),
-                        gpaHours: parseFloat(numbers[3]),
-                        qualityPoints: parseFloat(numbers[4]),
-                        gpa: parseFloat(numbers[5])
-                    });
-                }
-            }
-        });
-
-        return termTotals;
-    }
-
     parseOverallTotals(content) {
-        const totalsSection = content.match(/TRANSCRIPT TOTALS[\s\S]*?Overall:[\s\S]*?(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)/);
+        const overallMatch = content.match(/Overall:[\s\S]*?(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)\s+(\d+\.?\d*)/);
         
-        if (totalsSection) {
+        if (overallMatch) {
             return {
-                attemptHours: parseFloat(totalsSection[1]),
-                passedHours: parseFloat(totalsSection[2]),
-                earnedHours: parseFloat(totalsSection[3]),
-                gpaHours: parseFloat(totalsSection[4]),
-                qualityPoints: parseFloat(totalsSection[5]),
-                gpa: parseFloat(totalsSection[6])
+                attemptHours: parseFloat(overallMatch[1]),
+                passedHours: parseFloat(overallMatch[2]),
+                earnedHours: parseFloat(overallMatch[3]),
+                gpaHours: parseFloat(overallMatch[4]),
+                qualityPoints: parseFloat(overallMatch[5]),
+                gpa: parseFloat(overallMatch[6])
             };
         }
         
