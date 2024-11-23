@@ -98,6 +98,7 @@
     color: #2c3e50;
     font-weight: bold;
     margin-bottom: 10px;
+    /* text-align: ; */
 }
 
 .course-details {
@@ -221,7 +222,8 @@
 
 .day-slots {
     position: relative;
-    height: calc(60px * 15); /* 15 hour slots */
+    height: calc(60px * 15);
+    /* 15 hour slots */
 }
 
 .course-block {
@@ -263,6 +265,9 @@
     flex-direction: column;
 }
 
+.course-block-title{
+    color: #2c3e50;
+}
 .course-block-details span {
     white-space: nowrap;
     overflow: hidden;
@@ -270,19 +275,19 @@
 }
 
 .lab-block {
-  border-left: 3px solid rgba(0, 0, 0, 0.2);
+    border-left: 3px solid rgba(0, 0, 0, 0.2);
 }
 
 .course-block-details {
-  font-size: 0.75rem;
-  line-height: 1.2;
+    font-size: 0.75rem;
+    line-height: 1.2;
 }
 
 .course-block-details span {
-  display: block;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .modal-overlay {

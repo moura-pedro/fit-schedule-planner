@@ -317,9 +317,10 @@
         font-size: 1rem;
     }
     
-    .course-title {
+    .course-title-tree {
         font-size: 0.8rem;
         max-width: 100px;
+        color: white
     }
     
     .node-children {
