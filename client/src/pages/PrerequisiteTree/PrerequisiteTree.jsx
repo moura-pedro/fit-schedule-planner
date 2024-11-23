@@ -120,7 +120,7 @@ export default function PrerequisiteTree() {
           <div className="node-circle">
             <div className="node-content">
               <div className="course-code">{course.Course}</div>
-              <div className="course-title">{course.Title}</div>
+              <div className="course-title-tree">{course.Title}</div>
             </div>
           </div>
         </div>
