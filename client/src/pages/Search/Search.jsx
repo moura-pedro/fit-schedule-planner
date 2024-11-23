@@ -3,16 +3,64 @@ import axios from 'axios';
 import './Search.css';
 
 const Search = () => {
+  // Existing state variables for core functionality
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
-  const [selectedDay, setSelectedDay] = useState('');
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedSections, setSelectedSections] = useState([]);
   const [modal, setModal] = useState(null);
   const [sectionColors, setSectionColors] = useState(new Map());
 
+  // State variables for filters
+  const [subject, setSubject] = useState('');
+  const [professor, setProfessor] = useState('');
+  const [courseLevel, setCourseLevel] = useState('');
+  const [credits, setCredits] = useState('');
+  const [includeDays, setIncludeDays] = useState([]);
+  const [excludeDays, setExcludeDays] = useState([]);
+  const [showIncludeDaysDropdown, setShowIncludeDaysDropdown] = useState(false);
+  const [showExcludeDaysDropdown, setShowExcludeDaysDropdown] = useState(false);
+
+  // Time block state variables
+  const [showTimeBlockModal, setShowTimeBlockModal] = useState(false);
+  const [timeBlockName, setTimeBlockName] = useState('');
+  const [timeBlockDays, setTimeBlockDays] = useState([]);
+  const [timeBlockStart, setTimeBlockStart] = useState('');
+  const [timeBlockEnd, setTimeBlockEnd] = useState('');
+
   const searchFormRef = useRef(null);
 
+  // Filter options
+  const subjects = ['CSE', 'MTH', 'PHY', 'CHM', 'BIO', 'ENG', 'HIS', 'PSY'];
+  const courseLevels = ['1000+', '2000+', '3000+', '4000+', '5000+'];
+  const creditOptions = ['1', '2', '3', '4', '5'];
+  const daysOptions = [
+    { value: 'M', label: 'Monday' },
+    { value: 'T', label: 'Tuesday' },
+    { value: 'W', label: 'Wednesday' },
+    { value: 'R', label: 'Thursday' },
+    { value: 'F', label: 'Friday' }
+  ];
+
+  // Time slots and days arrays for schedule display
+  const timeSlots = Array.from({ length: 15 }, (_, i) => {
+    const hour = i + 7; // Start at 7 AM
+    return {
+      label: `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
+      hour
+    };
+  });
+
+  const days = ['M', 'T', 'W', 'R', 'F'];
+  const dayLabels = {
+    'M': 'Monday',
+    'T': 'Tuesday',
+    'W': 'Wednesday',
+    'R': 'Thursday',
+    'F': 'Friday'
+  };
+
+  // Color generation for schedule blocks
   const generateUniqueColors = (sections) => {
     const colorMap = new Map();
 
@@ -26,15 +74,16 @@ const Search = () => {
       const lightness = 80 + (hash % 10);
 
       colorMap.set(section.CRN, {
-        backgroundColor: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-        borderColor: `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`,
-        textColor: hue > 200 && lightness > 85 ? '#333' : '#fff'
+        backgroundColor: section.isPersonalBlock ? '#e2e8f0' : `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+        borderColor: section.isPersonalBlock ? '#4a5568' : `hsl(${hue}, ${saturation}%, ${lightness - 20}%)`,
+        textColor: section.isPersonalBlock ? '#2d3748' : (hue > 200 && lightness > 85 ? '#333' : '#fff')
       });
     });
 
     return colorMap;
   };
 
+  // Effect for generating colors when sections change
   useEffect(() => {
     if (selectedSections.length > 0) {
       const newColors = generateUniqueColors(selectedSections);
@@ -42,6 +91,64 @@ const Search = () => {
     }
   }, [selectedSections]);
 
+  // Time block handlers
+  const handleAddTimeBlock = (e) => {
+    e.preventDefault();
+    
+    // Validate inputs
+    if (!timeBlockName || timeBlockDays.length === 0 || !timeBlockStart || !timeBlockEnd) {
+      setModal({
+        type: 'error',
+        message: 'Please fill in all fields for the time block.',
+      });
+      return;
+    }
+
+    // Convert HH:MM format to military time
+    const convertToMilitaryTime = (time) => {
+      const [hours, minutes] = time.split(':');
+      return `${hours.padStart(2, '0')}${minutes}`;
+    };
+    
+    const newTimeBlock = {
+      CRN: `TB-${Date.now()}`,
+      Section: 'Personal',
+      Days: timeBlockDays.join(''),
+      Times: `${convertToMilitaryTime(timeBlockStart)}-${convertToMilitaryTime(timeBlockEnd)}`,
+      Place: '',
+      Instructor: '',
+      Capacity: '',
+      courseCode: '',
+      courseTitle: timeBlockName,
+      isPersonalBlock: true
+    };
+
+    // Check for time conflicts
+    const hasConflict = selectedSections.some(
+      selectedSection => hasTimeConflict(newTimeBlock, selectedSection)
+    );
+
+    if (hasConflict) {
+      setModal({
+        type: 'error',
+        message: 'This time block conflicts with another course or time block in your schedule.',
+      });
+      return;
+    }
+
+    setSelectedSections([...selectedSections, newTimeBlock]);
+    setShowTimeBlockModal(false);
+    resetTimeBlockForm();
+  };
+
+  const resetTimeBlockForm = () => {
+    setTimeBlockName('');
+    setTimeBlockDays([]);
+    setTimeBlockStart('');
+    setTimeBlockEnd('');
+  };
+
+  // Time formatting helpers
   const formatTimeToStandard = (militaryTime) => {
     if (!militaryTime) return 'TBA';
     const [start, end] = militaryTime.split('-');
@@ -63,6 +170,7 @@ const Search = () => {
     };
   };
 
+  // Time conflict checking
   const hasTimeConflict = (section1, section2) => {
     if (!section1.Times || !section2.Times || section1.Times === 'TBA' || section2.Times === 'TBA') return false;
 
@@ -83,39 +191,87 @@ const Search = () => {
     return (start1 < end2 && start2 < end1);
   };
 
-  const timeSlots = Array.from({ length: 15 }, (_, i) => {
-    const hour = i + 7; // Start at 7 AM
-    return {
-      label: `${hour > 12 ? hour - 12 : hour}:00 ${hour >= 12 ? 'PM' : 'AM'}`,
-      hour
-    };
-  });
-
-  const days = ['M', 'T', 'W', 'R', 'F'];
-  const dayLabels = {
-    'M': 'Monday',
-    'T': 'Tuesday',
-    'W': 'Wednesday',
-    'R': 'Thursday',
-    'F': 'Friday'
+  // Days filter handler
+  const handleDayToggle = (day, type) => {
+    if (type === 'include') {
+      if (includeDays.includes(day)) {
+        setIncludeDays(includeDays.filter(d => d !== day));
+      } else {
+        setIncludeDays([...includeDays, day]);
+      }
+    } else {
+      if (excludeDays.includes(day)) {
+        setExcludeDays(excludeDays.filter(d => d !== day));
+      } else {
+        setExcludeDays([...excludeDays, day]);
+      }
+    }
   };
 
+  // Main search handler
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
       const { data } = await axios.get('http://localhost:8000/api/courses/search', {
         params: {
-          query: query,
-          filter_day: selectedDay,
+          query,
+          subject,
+          professor,
+          courseLevel: courseLevel ? parseInt(courseLevel) : null,
+          credits: credits ? parseInt(credits) : null,
+          includeDays: includeDays.join(','),
+          excludeDays: excludeDays.join(','),
         },
       });
-      setResults(data);
+      
+      // Filter results based on all criteria
+      const filteredResults = data.filter(course => {
+        // Subject filter
+        if (subject && !course.Course.startsWith(subject)) return false;
+        
+        // Course level filter
+        if (courseLevel) {
+          const courseNumber = parseInt(course.Course.match(/\d+/)[0]);
+          if (courseNumber < parseInt(courseLevel)) return false;
+        }
+        
+        // Credits filter
+        if (credits && course.Credits !== parseInt(credits)) return false;
+        
+        // Professor and days filters (check if any section matches)
+        const hasMatchingSection = course.Sections.some(section => {
+          // Professor filter
+          if (professor && !section.Instructor.toLowerCase().includes(professor.toLowerCase())) {
+            return false;
+          }
+          
+          // Days filters
+          const sectionDays = section.Days.split('\n').join('').split('');
+          
+          // Include days filter
+          if (includeDays.length > 0 && !includeDays.every(day => sectionDays.includes(day))) {
+            return false;
+          }
+          
+          // Exclude days filter
+          if (excludeDays.length > 0 && excludeDays.some(day => sectionDays.includes(day))) {
+            return false;
+          }
+          
+          return true;
+        });
+        
+        return hasMatchingSection;
+      });
+      
+      setResults(filteredResults);
       setSelectedCourse(null);
     } catch (error) {
       console.error('Error fetching search results:', error);
     }
   };
 
+  // Section management handlers
   const handleAddSection = async (section) => {
     const courseExists = selectedSections.some(
       selected => selected.courseCode === selectedCourse.Course
@@ -134,7 +290,7 @@ const Search = () => {
     if (hasConflict) {
       setModal({
         type: 'error',
-        message: 'This section conflicts with another course in your schedule.',
+        message: 'This section conflicts with another course or time block in your schedule.',
       });
       return;
     }
@@ -180,6 +336,7 @@ const Search = () => {
     setSelectedSections(selectedSections.filter(section => section.CRN !== crn));
   };
 
+  // Schedule display helpers
   const getBlockStyle = (timeString, sectionCRN, isLab = false) => {
     const timeRange = parseTimeRange(timeString);
     if (!timeRange) return null;
@@ -188,7 +345,6 @@ const Search = () => {
     const startPosition = ((start.hours - 7) * 60 + start.minutes) / 60;
     const duration = ((end.hours - start.hours) * 60 + (end.minutes - start.minutes)) / 60;
 
-    // Get the pre-generated colors for this section
     const colors = sectionColors.get(sectionCRN) || {
       backgroundColor: '#e2e8f0',
       borderColor: '#cbd5e1',
@@ -207,24 +363,25 @@ const Search = () => {
   };
 
   const formatDisplayTimeAndPlace = (times, days, place) => {
-    if (!times || !days || !place) return { displayTime: 'TBA', displayPlace: 'TBA' };
+    if (!times || !days) return { displayTime: 'TBA', displayPlace: 'TBA' };
 
     const timesList = times.split('\n');
     const daysList = days.split('\n');
-    const placesList = place.split('\n');
+    const placesList = place ? place.split('\n') : [];
 
     let displayTime = formatTimeToStandard(timesList[0]);
-    let displayPlace = placesList[0];
+    let displayPlace = placesList[0] || '';
 
     if (timesList.length > 1) {
       displayTime += ` (Lab ${formatTimeToStandard(timesList[1])})`;
-      displayPlace += ` (Lab ${placesList[1]})`;
+      displayPlace += placesList[1] ? ` (Lab ${placesList[1]})` : '';
     }
 
     return { displayTime, displayPlace };
   };
 
   const formatSingleTime = (time) => {
+    if (!time) return '';
     const hour = parseInt(time.substring(0, 2));
     const minutes = time.substring(2);
     const period = hour >= 12 ? 'PM' : 'AM';
@@ -232,6 +389,95 @@ const Search = () => {
     return `${standardHour}:${minutes} ${period}`;
   };
 
+  // Time Block Modal Component
+  const TimeBlockModal = () => {
+    if (!showTimeBlockModal) return null;
+
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content time-block-modal">
+          <h2>Add Personal Time Block</h2>
+          <form onSubmit={handleAddTimeBlock}>
+            <div className="form-group">
+              <label>Name</label>
+              <input
+                type="text"
+                value={timeBlockName}
+                onChange={(e) => setTimeBlockName(e.target.value)}
+                placeholder="e.g., Basketball Practice"
+                className="filter-select"
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label>Days</label>
+              <div className="days-selected">
+                {daysOptions.map(day => (
+                  <label key={day.value} className="day-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={timeBlockDays.includes(day.value)}
+                      onChange={() => {
+                        if (timeBlockDays.includes(day.value)) {
+                          setTimeBlockDays(timeBlockDays.filter(d => d !== day.value));
+                        } else {
+                          setTimeBlockDays([...timeBlockDays, day.value]);
+                        }
+                      }}
+                    />
+                    {day.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="form-group time-selects">
+              <div>
+                <label>Start Time</label>
+                <input
+                  type="time"
+                  value={timeBlockStart}
+                  onChange={(e) => setTimeBlockStart(e.target.value)}
+                  className="filter-select"
+                  min="07:00"
+                  max="21:00"
+                />
+              </div>
+
+              <div>
+                <label>End Time</label>
+                <input
+                  type="time"
+                  value={timeBlockEnd}
+                  onChange={(e) => setTimeBlockEnd(e.target.value)}
+                  className="filter-select"
+                  min="07:00"
+                  max="21:00"
+                />
+              </div>
+            </div>
+
+            <div className="modal-buttons">
+              <button type="submit" className="add-button">Add Time Block</button>
+              <button
+                type="button"
+                className="cancel-button"
+                onClick={() => {
+                  setShowTimeBlockModal(false);
+                  resetTimeBlockForm();
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // Error/Confirmation Modal Component
   const Modal = () => {
     if (!modal) return null;
 
@@ -255,22 +501,163 @@ const Search = () => {
   return (
     <div className="search-container">
       <h1>Search Courses</h1>
-      <form onSubmit={handleSearch} ref={searchFormRef}>
-        <input
-          type="text"
-          placeholder="Search by course title or number"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <select value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
-          <option value="">All Days</option>
-          <option value="M">Monday</option>
-          <option value="T">Tuesday</option>
-          <option value="W">Wednesday</option>
-          <option value="R">Thursday</option>
-          <option value="F">Friday</option>
-        </select>
-        <button type="submit">Search</button>
+      <form onSubmit={handleSearch} ref={searchFormRef} className="search-form">
+        <div className="search-bar">
+          <input
+            type="text"
+            className="search-input"
+            placeholder="Search by course title or number"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+        
+        <div className="filters-grid">
+          <div className="filter-group">
+            <label>Subject</label>
+            <select
+              className="filter-select"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+            >
+              <option value="">All Subjects</option>
+              {subjects.map(sub => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Professor</label>
+            <input
+              type="text"
+              className="filter-select"
+              placeholder="Enter professor name"
+              value={professor}
+              onChange={(e) => setProfessor(e.target.value)}
+            />
+          </div>
+
+          <div className="filter-group">
+            <label>Course Level</label>
+            <select
+              className="filter-select"
+              value={courseLevel}
+              onChange={(e) => setCourseLevel(e.target.value)}
+            >
+              <option value="">All Levels</option>
+              {courseLevels.map(level => (
+                <option key={level} value={level}>{level}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Credits</label>
+            <select
+              className="filter-select"
+              value={credits}
+              onChange={(e) => setCredits(e.target.value)}
+            >
+              <option value="">All Credits</option>
+              {creditOptions.map(credit => (
+                <option key={credit} value={credit}>{credit}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="days-filters">
+          <div className="days-filter-section">
+            <label>Include Days</label>
+            <div className="days-multiselect">
+              <div 
+                className="days-selected"
+                onClick={() => setShowIncludeDaysDropdown(!showIncludeDaysDropdown)}
+              >
+                {includeDays.map(day => (
+                  <span key={day} className="day-chip">
+                    {daysOptions.find(d => d.value === day).label}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDayToggle(day, 'include');
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              {showIncludeDaysDropdown && (
+                <div className="days-dropdown">
+                  {daysOptions.map(day => (
+                    <label key={day.value}>
+                      <input
+                        type="checkbox"
+                        checked={includeDays.includes(day.value)}
+                        onChange={() => handleDayToggle(day.value, 'include')}
+                      />
+                      {day.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="days-filter-section">
+            <label>Exclude Days</label>
+            <div className="days-multiselect">
+              <div 
+                className="days-selected"
+                onClick={() => setShowExcludeDaysDropdown(!showExcludeDaysDropdown)}
+              >
+                {excludeDays.map(day => (
+                  <span key={day} className="day-chip">
+                    {daysOptions.find(d => d.value === day).label}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDayToggle(day, 'exclude');
+                      }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+              {showExcludeDaysDropdown && (
+                <div className="days-dropdown">
+                  {daysOptions.map(day => (
+                    <label key={day.value}>
+                      <input
+                        type="checkbox"
+                        checked={excludeDays.includes(day.value)}
+                        onChange={() => handleDayToggle(day.value, 'exclude')}
+                      />
+                      {day.label}
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="add-timeblock-button-container">
+          <button
+            type="button"
+            className="add-timeblock-button"
+            onClick={() => setShowTimeBlockModal(true)}
+          >
+            Add Personal Time Block
+          </button>
+        </div>
+
+        <button type="submit" className="search-button">Search</button>
       </form>
 
       <div className="split-view">
@@ -346,12 +733,16 @@ const Search = () => {
               return (
                 <div key={section.CRN} className="selected-section-card">
                   <div className="selected-section-info">
-                    <h4>{section.courseCode}: {section.courseTitle}</h4>
-                    <p>Section {section.Section} | {section.Days.replace('\n', ' ')}</p>
+                    <h4>{section.isPersonalBlock ? section.courseTitle : `${section.courseCode}: ${section.courseTitle}`}</h4>
+                    <p>Days: {section.Days.replace('\n', ' ')}</p>
                     <p>Time: {displayTime}</p>
-                    <p>Place: {displayPlace}</p>
-                    <p>Instructor: {section.Instructor}</p>
-                    <p>CRN: {section.CRN}</p>
+                    {!section.isPersonalBlock && (
+                      <>
+                        <p>Place: {displayPlace}</p>
+                        <p>Instructor: {section.Instructor}</p>
+                        <p>CRN: {section.CRN}</p>
+                      </>
+                    )}
                   </div>
                   <button
                     className="remove-section"
@@ -399,17 +790,17 @@ const Search = () => {
                         return blockStyle && (
                           <div
                             key={`${section.CRN}-${day}-${index}`}
-                            className={`course-block ${isLab ? 'lab-block' : ''}`}
+                            className={`course-block ${isLab ? 'lab-block' : ''} ${section.isPersonalBlock ? 'personal-block' : ''}`}
                             style={blockStyle}
                           >
                             <div className="course-block-content">
                               <div className="course-block-title">
-                                <strong>{section.courseCode}</strong>
+                                <strong>{section.isPersonalBlock ? section.courseTitle : section.courseCode}</strong>
                                 {isLab && <span className="lab-indicator"> (Lab)</span>}
                               </div>
                               <div className="course-block-details">
                                 <span>{formatTimeToStandard(allTimes[index])}</span>
-                                <span className="location">{allPlaces[index]}</span>
+                                {!section.isPersonalBlock && <span className="location">{allPlaces[index]}</span>}
                               </div>
                             </div>
                           </div>
@@ -426,6 +817,7 @@ const Search = () => {
       )}
 
       <Modal />
+      <TimeBlockModal />
     </div>
   );
 }
