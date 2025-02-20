@@ -177,3 +177,77 @@
         grid-template-columns: 1fr;
     }
 }
+
+.transcript-viewer {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.student-info {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.term-section {
+    margin-bottom: 40px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.term-section h3 {
+    background-color: #770000;
+    color: white;
+    padding: 15px 20px;
+    margin: 0;
+}
+
+.courses-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.courses-table th,
+.courses-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.courses-table th {
+    background-color: #f4f4f4;
+    font-weight: 600;
+}
+
+.courses-table tr.in-progress {
+    background-color: #fff3cd;
+}
+
+.courses-table tfoot {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.overall-totals {
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 30px;
+}
+
+.totals-table {
+    width: 100%;
+    max-width: 500px;
+}
+
+.totals-table td {
+    padding: 8px;
+}
+
+.totals-table td:first-child {
+    font-weight: 600;
+}

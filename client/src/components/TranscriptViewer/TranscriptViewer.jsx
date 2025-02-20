@@ -20,9 +20,11 @@ const TranscriptViewer = () => {
             });
             
             if (response.data.transcript) {
-                // Ensure overallTotals exists with default values
+                // Ensure courses array exists before organizing
+                const courses = response.data.transcript.courses || [];
                 const transcriptData = {
                     ...response.data.transcript,
+                    coursesByTerm: organizeCoursesByTerm(courses),
                     overallTotals: response.data.transcript.overallTotals || {
                         attemptHours: 0,
                         passedHours: 0,
@@ -43,6 +45,40 @@ const TranscriptViewer = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    // Helper function to organize courses by term
+    const organizeCoursesByTerm = (courses) => {
+        // Sort terms chronologically
+        const termOrder = {
+            'Spring': 1,
+            'Summer': 2,
+            'Fall': 3
+        };
+
+        const coursesByTerm = courses.reduce((acc, course) => {
+            if (!acc[course.term]) {
+                acc[course.term] = [];
+            }
+            acc[course.term].push(course);
+            return acc;
+        }, {});
+
+        // Sort terms by year and semester
+        return Object.entries(coursesByTerm)
+            .sort(([termA], [termB]) => {
+                const [semA, yearA] = termA.split(' ');
+                const [semB, yearB] = termB.split(' ');
+                
+                if (yearA !== yearB) {
+                    return parseInt(yearA) - parseInt(yearB);
+                }
+                return termOrder[semA] - termOrder[semB];
+            })
+            .reduce((acc, [term, courses]) => {
+                acc[term] = courses;
+                return acc;
+            }, {});
     };
 
     const getGradeColor = (grade) => {
@@ -90,8 +126,8 @@ const TranscriptViewer = () => {
         return <div className="transcript-empty">No transcript data available</div>;
     }
 
-    const { studentInfo = {}, courses = [] } = transcript;
-    const stats = calculateOverallStats(courses);
+    const { studentInfo = {}, coursesByTerm } = transcript;
+    const stats = calculateOverallStats(transcript.courses);
 
     return (
         <div className="transcript-container">
@@ -143,41 +179,51 @@ const TranscriptViewer = () => {
             {activeTab === 'courses' && (
                 <div className="courses-section">
                     <h3>Course History</h3>
-                    <div className="courses-table-container">
-                        <table className="courses-table">
-                            <thead>
-                                <tr>
-                                    <th>Term</th>
-                                    <th>Course</th>
-                                    <th>Title</th>
-                                    <th>Credits</th>
-                                    <th>Grade</th>
-                                    <th>Points</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {courses
-                                    .sort((a, b) => (a.term || '').localeCompare(b.term || ''))
-                                    .map((course, index) => (
-                                    <tr key={index} className={course.status === 'in-progress' ? 'in-progress' : ''}>
-                                        <td>{course.term || 'N/A'}</td>
-                                        <td>{course.subject} {course.courseCode}</td>
-                                        <td>{course.title || 'N/A'}</td>
-                                        <td>{(course.creditHours || 0).toFixed(3)}</td>
-                                        <td>
-                                            <span 
-                                                className="grade-pill"
-                                                style={{ backgroundColor: getGradeColor(course.grade) }}
-                                            >
-                                                {course.grade || 'IP'}
-                                            </span>
-                                        </td>
-                                        <td>{course.qualityPoints ? course.qualityPoints.toFixed(2) : '-'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                    {Object.entries(coursesByTerm).map(([term, courses]) => (
+                        <div key={term} className="term-section">
+                            <h4>{term}</h4>
+                            <div className="courses-table-container">
+                                <table className="courses-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Course</th>
+                                            <th>Title</th>
+                                            <th>Grade</th>
+                                            <th>Credits</th>
+                                            <th>Points</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {courses.map((course, index) => (
+                                            <tr key={index} className={course.status === 'in-progress' ? 'in-progress' : ''}>
+                                                <td>{course.subject} {course.courseCode}</td>
+                                                <td>{course.title || 'N/A'}</td>
+                                                <td>
+                                                    <span 
+                                                        className="grade-pill"
+                                                        style={{ backgroundColor: getGradeColor(course.grade) }}
+                                                    >
+                                                        {course.grade || 'IP'}
+                                                    </span>
+                                                </td>
+                                                <td>{(course.creditHours || 0).toFixed(3)}</td>
+                                                <td>{course.qualityPoints ? course.qualityPoints.toFixed(2) : '-'}</td>
+                                                <td>{course.status}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr>
+                                            <td colSpan="6">
+                                                Term GPA: {calculateTermGPA(courses).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
 
@@ -213,6 +259,16 @@ const TranscriptViewer = () => {
             )}
         </div>
     );
+};
+
+// Helper function to calculate term GPA
+const calculateTermGPA = (courses) => {
+    const completedCourses = courses.filter(course => course.status === 'completed');
+    if (completedCourses.length === 0) return 0;
+
+    const totalPoints = completedCourses.reduce((sum, course) => sum + course.qualityPoints, 0);
+    const totalHours = completedCourses.reduce((sum, course) => sum + course.creditHours, 0);
+    return totalPoints / totalHours;
 };
 
 export default TranscriptViewer;
