@@ -19,7 +19,7 @@ app.use(express.urlencoded({extender: false}))
 app.use('/', require('./routes/authRoutes'))
 app.use('/api/courses', require('./routes/courseRoutes'));
 app.use('/api', require('./routes/fileRoutes'));
-
+app.use('/api', require('./routes/programRoutes')); // Add this line for program routes
 
 const port = 8000;
 app.listen(port, () => console.log(`Server is running on port ${port}`))
