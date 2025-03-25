@@ -49,44 +49,50 @@ const registerUser = async (req, res) => {
 }
 
 // Login Endpoint
-
 const loginUser = async (req, res) => {
     try {
-        const {email, password} = req.body;
-
-        // Check if user exists
-        const user = await User.findOne({email});
+        const { email, password } = req.body;
+        
+        // Validate inputs
+        if (!email || !password) {
+            return res.json({
+                error: 'Email and password are required'
+            });
+        }
+        
+        // Find user by email
+        const user = await User.findOne({ email });
         if (!user) {
             return res.json({
-                error: 'No user found'
-            })
-        }
-
-        // Check if passwords match
-        const match = await comparePassword(password, user.password)
-        if (match) {
-            jwt.sign({
-                email: user.email, 
-                id: user._id, 
-                name: user.name
-            }, process.env.JWT_SECRET, {}, (err, token) => {
-                if (err) throw err;
-                res.cookie('token', token).json({
-                    id: user._id,
-                    email: user.email,
-                    name: user.name
-                });
+                error: 'No user found with this email'
             });
-        } else {
-            return res.json({
-                error: 'Passwords do not match'
-            })
         }
+        
+        // Check password
+        const match = await comparePassword(password, user.password);
+        if (!match) {
+            return res.json({
+                error: 'Password is incorrect'
+            });
+        }
+        
+        // Generate JWT token
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+            expiresIn: '7d' // Token expires in 7 days
+        });
+        
+        // Don't send password in response
+        const { password: userPassword, ...userWithoutPassword } = user.toObject();
+        
+        res.json({
+            user: userWithoutPassword,
+            token
+        });
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: 'Internal server error' });
+        console.log(error);
+        res.status(500).json({ error: 'Server error' });
     }
-}
+};
 
 const getProfile = async (req, res) => {
     try {

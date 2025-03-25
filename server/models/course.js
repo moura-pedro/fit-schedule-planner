@@ -8,7 +8,15 @@ const sectionSchema = new Schema({
   Times: String,
   Place: String,
   Instructor: String,
-  Capacity: String
+  Capacity: String,
+  CurrentEnrollment: {
+    type: Number,
+    default: 0
+  },
+  registeredUsers: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }]
 });
 
 const courseSchema = new Schema({
