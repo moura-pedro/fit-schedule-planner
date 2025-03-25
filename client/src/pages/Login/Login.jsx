@@ -28,9 +28,14 @@ function Login() {
             if (responseData.error) {
                 toast.error(responseData.error)
             } else {
+                // Save user info in localStorage
+                localStorage.setItem('userId', responseData.user._id);
+                localStorage.setItem('userName', responseData.user.name);
+                localStorage.setItem('token', responseData.token);
+                
                 setUser(responseData)
                 setData({})
-                toast.success('Login successful!')
+                toast.success('Login successful. Welcome back!')
                 navigate('/dashboard')
             }
         } catch (error) {

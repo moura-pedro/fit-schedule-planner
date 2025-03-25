@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const cors = require('cors');
-const { searchCourses, getPrerequisites } = require('../controllers/courseController');
+const { searchCourses, getPrerequisites, registerForCourses } = require('../controllers/courseController');
 
 router.use(
     cors({
@@ -12,5 +12,6 @@ router.use(
 
 router.get('/search', searchCourses);
 router.get('/prerequisites', getPrerequisites);
+router.post('/register', registerForCourses);
 
 module.exports = router;

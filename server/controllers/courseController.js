@@ -74,8 +74,66 @@ const searchCourses = async (req, res) => {
     }
 };
 
+const registerForCourses = async (req, res) => {
+  try {
+    const { sections, userId } = req.body; // Add userId parameter
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Update each section's enrollment
+    const updatePromises = sections.map(async (crn) => {
+      const course = await Course.findOne({ 'Sections.CRN': crn });
+      if (!course) {
+        throw new Error(`Section ${crn} not found`);
+      }
+
+      const section = course.Sections.find(s => s.CRN === crn);
+      
+      // Check if capacity is in format "current/max"
+      let currentEnrollment = section.CurrentEnrollment || 0;
+      let capacity;
+      
+      if (section.Capacity.includes('/')) {
+        // Parse capacity string like "13/16"
+        const [enrolled, max] = section.Capacity.split('/').map(Number);
+        capacity = max;
+      } else {
+        capacity = parseInt(section.Capacity);
+      }
+
+      if (currentEnrollment >= capacity) {
+        throw new Error(`Section ${crn} is full`);
+      }
+
+      // Check if user is already registered for this section
+      // We'll use a field to track registered users for each section
+      if (section.registeredUsers && section.registeredUsers.includes(userId)) {
+        throw new Error(`You are already registered for section ${crn}`);
+      }
+
+      // Add user to registered users and increment enrollment
+      return Course.updateOne(
+        { 'Sections.CRN': crn },
+        { 
+          $inc: { 'Sections.$.CurrentEnrollment': 1 },
+          $addToSet: { 'Sections.$.registeredUsers': userId }
+        }
+      );
+    });
+
+    await Promise.all(updatePromises);
+    res.json({ message: 'Registration successful' });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
     searchCourses,
-    getPrerequisites
+    getPrerequisites,
+    registerForCourses
 };
 
