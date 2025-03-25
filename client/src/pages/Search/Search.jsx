@@ -10,6 +10,7 @@ const Search = () => {
   const [selectedSections, setSelectedSections] = useState([]);
   const [modal, setModal] = useState(null);
   const [sectionColors, setSectionColors] = useState(new Map());
+  const [registrationStatus, setRegistrationStatus] = useState(null);
 
   const searchFormRef = useRef(null);
 
@@ -232,6 +233,41 @@ const Search = () => {
     return `${standardHour}:${minutes} ${period}`;
   };
 
+  const handleRegister = async () => {
+    try {
+      // Get user ID from localStorage
+      const userId = localStorage.getItem('userId');
+      
+      if (!userId) {
+        setRegistrationStatus({
+          type: 'error',
+          message: 'You must be logged in to register for classes. Please login first.'
+        });
+        return;
+      }
+      
+      const response = await axios.post('http://localhost:8000/api/courses/register', {
+        sections: selectedSections.map(section => section.CRN),
+        userId: userId
+      });
+      
+      setRegistrationStatus({
+        type: 'success',
+        message: 'Successfully registered for classes!'
+      });
+      
+      // Refresh the course data
+      if (query) {
+        handleSearch({ preventDefault: () => {} });
+      }
+    } catch (error) {
+      setRegistrationStatus({
+        type: 'error',
+        message: error.response?.data?.message || 'Registration failed'
+      });
+    }
+  };
+
   const Modal = () => {
     if (!modal) return null;
 
@@ -317,7 +353,7 @@ const Search = () => {
                       <p>Time: {displayTime}</p>
                       <p>Place: {displayPlace}</p>
                       <p>Instructor: {section.Instructor}</p>
-                      <p>Capacity: {section.Capacity}</p>
+                      <p>Enrollment: {section.CurrentEnrollment || 0} / {section.Capacity.split('/')[1] || section.Capacity}</p>
                       <p>CRN: {section.CRN}</p>
                     </div>
                   );
@@ -365,6 +401,19 @@ const Search = () => {
                 </div>
               );
             })}
+          </div>
+          <div className="registration-actions">
+            <button 
+              className="register-button"
+              onClick={handleRegister}
+            >
+              Register for Selected Classes
+            </button>
+            {registrationStatus && (
+              <div className={`registration-status ${registrationStatus.type}`}>
+                {registrationStatus.message}
+              </div>
+            )}
           </div>
         </div>
       )}
