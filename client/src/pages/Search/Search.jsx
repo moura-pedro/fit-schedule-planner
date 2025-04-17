@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import './Search.css';
+import Navbar from '../../components/Navbar/Navbar'
 
 const Search = () => {
   const [query, setQuery] = useState('');
@@ -661,7 +662,9 @@ const Search = () => {
   };
 
   return (
+    
     <div className="search-container">
+      <Navbar />
       <h1>Search Courses</h1>
       
       <div className="search-filters">
