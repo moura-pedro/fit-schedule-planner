@@ -835,7 +835,7 @@ const Search = () => {
                       <p>Place: {displayPlace}</p>
                       
                       <p>Instructor: {section.Instructor}</p>
-                      <p>Enrollment: {section.CurrentEnrollment || 0} / {section.Capacity.split('/')[1] || section.Capacity}</p>
+                      <p>Capacity: {section.CurrentEnrollment || 0} / {section.Capacity.split('/')[1] || section.Capacity}</p>
 
                       <div className="instructor-info">
                         <p>Instructor: {section.Instructor}
@@ -846,7 +846,6 @@ const Search = () => {
                           )}
                         </p>
                       </div>
-                      <p>Capacity: {section.Capacity}</p>
 
                       <p>CRN: {section.CRN}</p>
                       {hasConflict && <p className="conflict-warning">Time conflict detected</p>}
