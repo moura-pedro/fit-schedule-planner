@@ -31,7 +31,6 @@ function Login() {
                 // Save user info in localStorage
                 localStorage.setItem('userId', responseData.user._id);
                 localStorage.setItem('userName', responseData.user.name);
-                localStorage.setItem('token', responseData.token);
                 
                 setUser(responseData)
                 setData({})

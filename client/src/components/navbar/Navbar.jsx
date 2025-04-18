@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import './Navbar.css'
 import logo from "../../assets/main-logo.png"
 import { toast } from 'react-hot-toast'
+import axios from 'axios'
 
 function Navbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -20,19 +21,26 @@ function Navbar() {
     }
   }, [])
 
-  const handleLogout = () => {
-    // Clear all localStorage items
-    localStorage.removeItem('userId')
-    localStorage.removeItem('userName')
-    localStorage.removeItem('token')
-    
-    // Update state
-    setIsLoggedIn(false)
-    setUserName('')
-    
-    // Show toast and redirect
-    toast.success('Logged out successfully')
-    navigate('/login')
+  const handleLogout = async () => {
+    try {
+      // Make a request to clear the cookie
+      await axios.post('/logout', {}, { withCredentials: true });
+      
+      // Clear all localStorage items
+      localStorage.removeItem('userId')
+      localStorage.removeItem('userName')
+      
+      // Update state
+      setIsLoggedIn(false)
+      setUserName('')
+      
+      // Show toast and redirect
+      toast.success('Logged out successfully')
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast.error('Error during logout');
+    }
   }
 
   return (
