@@ -81,12 +81,19 @@ const loginUser = async (req, res) => {
             expiresIn: '7d' // Token expires in 7 days
         });
         
+        // Set token as cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+        
         // Don't send password in response
         const { password: userPassword, ...userWithoutPassword } = user.toObject();
         
         res.json({
-            user: userWithoutPassword,
-            token
+            user: userWithoutPassword
         });
     } catch (error) {
         console.log(error);
@@ -119,9 +126,15 @@ const getProfile = async (req, res) => {
     }
 };
 
+const logout = (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: 'Logged out successfully' });
+};
+
 module.exports = {
     test,
     registerUser,
     loginUser,
-    getProfile
+    getProfile,
+    logout
 }
