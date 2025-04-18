@@ -29,3 +29,21 @@ node_modules/
 # Ignore cache directories
 .cache/
 **/.cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
