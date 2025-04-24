@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, Component } from 'react';
 import axios from 'axios';
 import './Search.css';
 import Navbar from '../../components/Navbar/Navbar'
@@ -16,6 +16,7 @@ const Search = () => {
   const [showRMP, setShowRMP] = useState(false);
   const [professorRatings, setProfessorRatings] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingRMP, setIsLoadingRMP] = useState(false);
   
   // Advanced filter states
   const [filters, setFilters] = useState({
@@ -43,6 +44,150 @@ const Search = () => {
   const [showTimeBlockForm, setShowTimeBlockForm] = useState(false);
 
   const searchFormRef = useRef(null);
+
+  // Helper function for RMP rating color classes
+  const getRatingColorClass = (score) => {
+    if (score === 'N/A') return 'rmp-score-na';
+    const numScore = parseFloat(score);
+    if (numScore >= 4.0) return 'rmp-score-excellent';
+    if (numScore >= 3.0) return 'rmp-score-good';
+    if (numScore >= 2.0) return 'rmp-score-average';
+    return 'rmp-score-poor';
+  };
+
+  // TimeDropdown component with 15-minute intervals for 24 hours
+  const TimeDropdown = ({ value, onChange, label }) => {
+    const generateTimeOptions = () => {
+      const options = [];
+      for (let hour = 0; hour < 24; hour++) {
+        for (let minute of [0, 15, 30, 45]) {
+          const period = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
+          const timeString = `${displayHour}:${minute === 0 ? '00' : minute} ${period}`;
+          options.push(timeString);
+        }
+      }
+      return options;
+    };
+
+    const timeOptions = generateTimeOptions();
+
+    return (
+      <div>
+        <label>{label}</label>
+        <select 
+          value={value} 
+          onChange={(e) => onChange(e.target.value)}
+          className="time-dropdown"
+        >
+          <option value="">Select Time</option>
+          {timeOptions.map((time) => (
+            <option key={time} value={time}>
+              {time}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  };
+
+  // Class component for the TimeBlockForm modal
+  class TimeBlockFormModal extends Component {
+    constructor(props) {
+      super(props);
+      this.modalRef = React.createRef();
+      this.nameInputRef = React.createRef();
+    }
+  
+    componentDidMount() {
+      // Focus on the name input when the modal opens
+      if (this.nameInputRef.current) {
+        this.nameInputRef.current.focus();
+      }
+    }
+    
+    // New handler to stop propagation for all clicks inside the modal
+    handleModalClick = (e) => {
+      e.stopPropagation();
+    };
+    
+    render() {
+      const { 
+        timeBlockForm, 
+        setTimeBlockForm, 
+        handleAddTimeBlock, 
+        onClose,
+        days 
+      } = this.props;
+      
+      return (
+        <div className="modal-overlay time-block-form-overlay" onClick={this.handleModalClick}>
+          <div 
+            className="modal-content time-block-form" 
+            ref={this.modalRef}
+            onClick={this.handleModalClick}
+          >
+            <h3>Add Personal Time Block</h3>
+            <div className="form-group">
+              <label>Name</label>
+              <input 
+                type="text" 
+                placeholder="e.g., Gym, Study Time"
+                value={timeBlockForm.name}
+                onChange={(e) => setTimeBlockForm({...timeBlockForm, name: e.target.value})}
+                ref={this.nameInputRef}
+              />
+            </div>
+            <div className="form-group">
+              <label>Days</label>
+              <div className="day-checkboxes">
+                {days.map(day => (
+                  <label key={day} className="day-checkbox">
+                    <input 
+                      type="checkbox" 
+                      checked={timeBlockForm.days.includes(day)}
+                      onChange={() => {
+                        if (timeBlockForm.days.includes(day)) {
+                          setTimeBlockForm({
+                            ...timeBlockForm, 
+                            days: timeBlockForm.days.replace(day, '')
+                          });
+                        } else {
+                          setTimeBlockForm({
+                            ...timeBlockForm,
+                            days: timeBlockForm.days + day
+                          });
+                        }
+                      }}
+                    />
+                    {day}
+                  </label>
+                ))}
+              </div>
+            </div>
+            
+            <div className="form-group time-inputs">
+              <TimeDropdown 
+                label="Start Time"
+                value={timeBlockForm.startTime}
+                onChange={(value) => setTimeBlockForm({...timeBlockForm, startTime: value})}
+              />
+              <TimeDropdown 
+                label="End Time"
+                value={timeBlockForm.endTime}
+                onChange={(value) => setTimeBlockForm({...timeBlockForm, endTime: value})}
+              />
+            </div>
+            
+            <div className="modal-buttons">
+              <button onClick={handleAddTimeBlock}>Add Block</button>
+              <button onClick={onClose}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+  }
 
   const generateUniqueColors = (sections) => {
     const colorMap = new Map();
@@ -90,29 +235,67 @@ const Search = () => {
   
   // Function to fetch RateMyProfessor ratings
   const fetchProfessorRatings = async (professorName) => {
-    if (!showRMP || professorRatings[professorName]) return;
+    if (!showRMP || !professorName || professorRatings[professorName]) return;
     
     try {
-      setIsLoading(true);
-      // This would normally be your RMP API call
-      // For demo purposes, we'll simulate an API call with setTimeout
-      const mockApiCall = new Promise((resolve) => {
-        setTimeout(() => {
-          // Generate a random rating between 2.0 and 5.0
-          const rating = (Math.random() * 3 + 2).toFixed(1);
-          resolve({ rating });
-        }, 500);
+      setIsLoadingRMP(true);
+      
+      // Split name for better searching
+      const nameParts = professorName.split(' ');
+      let lastName = '';
+      let firstName = '';
+      
+      if (nameParts.length >= 2) {
+        lastName = nameParts[nameParts.length - 1];
+        firstName = nameParts[0];
+      } else {
+        lastName = professorName;
+      }
+      
+      // Call the backend API
+      const response = await axios.get('http://localhost:8000/api/rmp/professor', {
+        params: {
+          firstName,
+          lastName
+          // schoolId is optional and defaults to 1449 (Florida Tech) in our backend
+        }
       });
       
-      const { rating } = await mockApiCall;
-      setProfessorRatings(prev => ({
-        ...prev,
-        [professorName]: rating
-      }));
+      if (response.data && response.data.found) {
+        setProfessorRatings(prev => ({
+          ...prev,
+          [professorName]: {
+            score: response.data.avgRating || 'N/A',
+            numRatings: response.data.numRatings || 0,
+            department: response.data.department || '',
+            difficulty: response.data.difficulty || 'N/A',
+            wouldTakeAgain: response.data.wouldTakeAgain || 'N/A',
+            profileUrl: response.data.profileUrl || ''
+          }
+        }));
+      } else {
+        // No rating found
+        setProfessorRatings(prev => ({
+          ...prev,
+          [professorName]: { 
+            score: 'N/A', 
+            numRatings: 0,
+            notFound: true
+          }
+        }));
+      }
     } catch (error) {
       console.error('Error fetching professor rating:', error);
+      setProfessorRatings(prev => ({
+        ...prev,
+        [professorName]: { 
+          score: 'N/A', 
+          numRatings: 0,
+          error: true
+        }
+      }));
     } finally {
-      setIsLoading(false);
+      setIsLoadingRMP(false);
     }
   };
 
@@ -126,9 +309,14 @@ const Search = () => {
   useEffect(() => {
     // Fetch ratings for professors in the selected course when RMP is toggled on
     if (showRMP && selectedCourse) {
-      const uniqueProfessors = [...new Set(selectedCourse.Sections.map(section => section.Instructor))];
+      const uniqueProfessors = [...new Set(
+        selectedCourse.Sections
+          .map(section => section.Instructor)
+          .filter(instructor => instructor && instructor.trim() !== '')
+      )];
+      
       uniqueProfessors.forEach(professor => {
-        if (professor) fetchProfessorRatings(professor);
+        fetchProfessorRatings(professor);
       });
     }
   }, [showRMP, selectedCourse]);
@@ -198,6 +386,36 @@ const Search = () => {
       const blockEnd = timeBlockTime.end.hours * 60 + timeBlockTime.end.minutes;
       
       return (sectionStart < blockEnd && blockStart < sectionEnd);
+    });
+  };
+
+  // Check if a time block conflicts with existing sections
+  const checkTimeBlockConflictWithSections = (timeBlock, sections) => {
+    if (sections.length === 0) return false;
+    
+    const blockTime = {
+      start: parseMilitaryTime(timeBlock.startTime),
+      end: parseMilitaryTime(timeBlock.endTime)
+    };
+    
+    const blockDays = timeBlock.days.split('');
+    
+    return sections.some(section => {
+      if (!section.Times || section.Times === 'TBA') return false;
+      
+      const sectionTime = parseTimeRange(section.Times);
+      const sectionDays = section.Days.split('\n').join('').split('');
+      
+      const sharedDays = blockDays.some(day => sectionDays.includes(day));
+      
+      if (!sharedDays) return false;
+      
+      const blockStart = blockTime.start.hours * 60 + blockTime.start.minutes;
+      const blockEnd = blockTime.end.hours * 60 + blockTime.end.minutes;
+      const sectionStart = sectionTime.start.hours * 60 + sectionTime.start.minutes;
+      const sectionEnd = sectionTime.end.hours * 60 + sectionTime.end.minutes;
+      
+      return (blockStart < sectionEnd && sectionStart < blockEnd);
     });
   };
 
@@ -448,6 +666,17 @@ const Search = () => {
       color: generateTimeBlockColors(timeBlockForm)
     };
     
+    // Check for conflicts with existing sections
+    const hasConflict = checkTimeBlockConflictWithSections(newTimeBlock, selectedSections);
+    
+    if (hasConflict) {
+      setModal({
+        type: 'error',
+        message: 'This time block conflicts with a course in your schedule.',
+      });
+      return;
+    }
+    
     setTimeBlocks([...timeBlocks, newTimeBlock]);
     setTimeBlockForm({
       name: '',
@@ -570,15 +799,30 @@ const Search = () => {
 
   const Modal = () => {
     if (!modal) return null;
-
+  
+    // Add stopPropagation to prevent clicks in this modal from closing the time block form
+    const handleModalClick = (e) => {
+      e.stopPropagation();
+    };
+  
     return (
-      <div className="modal-overlay">
-        <div className="modal-content">
+      <div className="modal-overlay" onClick={handleModalClick}>
+        <div className="modal-content" onClick={handleModalClick}>
           <p>{modal.message}</p>
           {modal.type === 'confirm' ? (
             <div className="modal-buttons">
-              <button onClick={modal.onConfirm}>Yes</button>
-              <button onClick={modal.onCancel}>No</button>
+              <button onClick={() => {
+                // Call onConfirm if provided
+                if (modal.onConfirm) modal.onConfirm();
+                // Clear the modal
+                setModal(null);
+              }}>Yes</button>
+              <button onClick={() => {
+                // Call onCancel if provided
+                if (modal.onCancel) modal.onCancel();
+                // Clear the modal
+                setModal(null);
+              }}>No</button>
             </div>
           ) : (
             <button onClick={() => setModal(null)}>OK</button>
@@ -588,76 +832,18 @@ const Search = () => {
     );
   };
   
-  // Time block form modal
+  // Replacement for the TimeBlockForm functional component
   const TimeBlockForm = () => {
     if (!showTimeBlockForm) return null;
     
     return (
-      <div className="modal-overlay">
-        <div className="modal-content time-block-form">
-          <h3>Add Personal Time Block</h3>
-          <div className="form-group">
-            <label>Name</label>
-            <input 
-              type="text" 
-              placeholder="e.g., Gym, Study Time"
-              value={timeBlockForm.name}
-              onChange={(e) => setTimeBlockForm({...timeBlockForm, name: e.target.value})}
-            />
-          </div>
-          <div className="form-group">
-            <label>Days</label>
-            <div className="day-checkboxes">
-              {days.map(day => (
-                <label key={day} className="day-checkbox">
-                  <input 
-                    type="checkbox" 
-                    checked={timeBlockForm.days.includes(day)}
-                    onChange={() => {
-                      if (timeBlockForm.days.includes(day)) {
-                        setTimeBlockForm({
-                          ...timeBlockForm, 
-                          days: timeBlockForm.days.replace(day, '')
-                        });
-                      } else {
-                        setTimeBlockForm({
-                          ...timeBlockForm,
-                          days: timeBlockForm.days + day
-                        });
-                      }
-                    }}
-                  />
-                  {day}
-                </label>
-              ))}
-            </div>
-          </div>
-          <div className="form-group time-inputs">
-            <div>
-              <label>Start Time</label>
-              <input 
-                type="text" 
-                placeholder="e.g., 8:00 AM"
-                value={timeBlockForm.startTime}
-                onChange={(e) => setTimeBlockForm({...timeBlockForm, startTime: e.target.value})}
-              />
-            </div>
-            <div>
-              <label>End Time</label>
-              <input 
-                type="text" 
-                placeholder="e.g., 9:30 AM"
-                value={timeBlockForm.endTime}
-                onChange={(e) => setTimeBlockForm({...timeBlockForm, endTime: e.target.value})}
-              />
-            </div>
-          </div>
-          <div className="modal-buttons">
-            <button onClick={handleAddTimeBlock}>Add Block</button>
-            <button onClick={() => setShowTimeBlockForm(false)}>Cancel</button>
-          </div>
-        </div>
-      </div>
+      <TimeBlockFormModal
+        timeBlockForm={timeBlockForm}
+        setTimeBlockForm={setTimeBlockForm}
+        handleAddTimeBlock={handleAddTimeBlock}
+        onClose={() => setShowTimeBlockForm(false)}
+        days={days}
+      />
     );
   };
 
@@ -834,19 +1020,50 @@ const Search = () => {
                       <p>Time: {displayTime}</p>
                       <p>Place: {displayPlace}</p>
                       
-                      <p>Instructor: {section.Instructor}</p>
-                      <p>Capacity: {section.CurrentEnrollment || 0} / {section.Capacity.split('/')[1] || section.Capacity}</p>
-
                       <div className="instructor-info">
                         <p>Instructor: {section.Instructor}
-                          {showRMP && professorRatings[section.Instructor] && (
-                            <span className="rmp-score">
-                              RMP: {professorRatings[section.Instructor]}
-                            </span>
+                          {showRMP && section.Instructor && (
+                            isLoadingRMP ? (
+                              <span className="rmp-loading">Loading rating...</span>
+                            ) : professorRatings[section.Instructor] ? (
+                              <span className={`rmp-score ${getRatingColorClass(professorRatings[section.Instructor].score)}`}>
+                                <div className="rmp-tooltip">
+                                  {professorRatings[section.Instructor].score !== 'N/A' 
+                                    ? `${professorRatings[section.Instructor].score}/5` 
+                                    : 'N/A'}
+                                  
+                                  <div className="rmp-tooltip-content">
+                                    <p className="rmp-tooltip-title">{section.Instructor}</p>
+                                    {professorRatings[section.Instructor].score !== 'N/A' ? (
+                                      <>
+                                        <p>Overall Rating: {professorRatings[section.Instructor].score}/5</p>
+                                        <p>Difficulty: {professorRatings[section.Instructor].difficulty || 'N/A'}/5</p>
+                                        <p>Would Take Again: {professorRatings[section.Instructor].wouldTakeAgain || 'N/A'}</p>
+                                        <p>Based on {professorRatings[section.Instructor].numRatings} rating(s)</p>
+                                        {professorRatings[section.Instructor].department && (
+                                          <p>Department: {professorRatings[section.Instructor].department}</p>
+                                        )}
+                                        <div className="rmp-tooltip-footer">
+                                          {professorRatings[section.Instructor].profileUrl ? (
+                                            <a href={professorRatings[section.Instructor].profileUrl} 
+                                               target="_blank" rel="noopener noreferrer">
+                                              View on RateMyProfessors
+                                            </a>
+                                          ) : 'Data from RateMyProfessors'}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <p>No ratings available for this professor</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </span>
+                            ) : null
                           )}
                         </p>
                       </div>
 
+                      <p>Capacity: {section.CurrentEnrollment || 0} / {section.Capacity.split('/')[1] || section.Capacity}</p>
                       <p>CRN: {section.CRN}</p>
                       {hasConflict && <p className="conflict-warning">Time conflict detected</p>}
                     </div>

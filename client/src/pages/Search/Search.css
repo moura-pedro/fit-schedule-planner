@@ -1,16 +1,14 @@
 .search-container {
     padding: 20px;
     max-width: 1200px;
-    margin: auto;
+    margin: 70px auto;
     background-color: #f9f9f9;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    margin-top: 70px;
-    margin-bottom: 70px;
     z-index: 10;
 }
 
-/* Search Filters Styles */
+/* Search Form Styles */
 .search-filters {
     display: flex;
     flex-direction: column;
@@ -44,6 +42,7 @@
     background-color: #0056b3;
 }
 
+/* Filter Styles */
 .advanced-filters {
     background-color: white;
     border-radius: 8px;
@@ -91,6 +90,7 @@
     align-items: center;
     gap: 5px;
     cursor: pointer;
+    user-select: none;
 }
 
 .day-filter-mode {
@@ -141,6 +141,7 @@
     cursor: pointer;
 }
 
+/* Course and Section Styles */
 .split-view {
     display: flex;
     gap: 20px;
@@ -148,59 +149,16 @@
     height: 60vh;
 }
 
-.courses-list {
+.courses-list, .sections-view {
     flex: 1;
     overflow-y: auto;
-    padding-right: 10px;
-    scrollbar-width: thin;
-    scrollbar-color: #007bff #f0f0f0;
-}
-
-.courses-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.courses-list::-webkit-scrollbar-track {
-    background: #f0f0f0;
-    border-radius: 4px;
-}
-
-.courses-list::-webkit-scrollbar-thumb {
-    background: #007bff;
-    border-radius: 4px;
-}
-
-.courses-list::-webkit-scrollbar-thumb:hover {
-    background: #0056b3;
 }
 
 .sections-view {
-    flex: 1;
     background-color: white;
     border-radius: 8px;
     padding: 20px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #007bff #f0f0f0;
-}
-
-.sections-view::-webkit-scrollbar {
-    width: 8px;
-}
-
-.sections-view::-webkit-scrollbar-track {
-    background: #f0f0f0;
-    border-radius: 4px;
-}
-
-.sections-view::-webkit-scrollbar-thumb {
-    background: #007bff;
-    border-radius: 4px;
-}
-
-.sections-view::-webkit-scrollbar-thumb:hover {
-    background: #0056b3;
 }
 
 .course-card {
@@ -208,10 +166,10 @@
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     background-color: white;
     cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .course-card:hover {
@@ -289,16 +247,112 @@
     margin: 5px 0;
 }
 
+/* RateMyProfessor Styles */
 .rmp-score {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
     margin-left: 10px;
-    padding: 2px 6px;
-    background-color: #007bff;
-    color: white;
+    padding: 3px 8px;
     border-radius: 4px;
     font-size: 0.85rem;
+    font-weight: 500;
+    background-color: #007bff;
+    color: white;
 }
 
+.rmp-score-excellent {
+    background-color: #28a745;
+    color: white;
+}
+
+.rmp-score-good {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.rmp-score-average {
+    background-color: #ffc107;
+    color: #343a40;
+}
+
+.rmp-score-poor {
+    background-color: #dc3545;
+    color: white;
+}
+
+.rmp-score-na {
+    background-color: #6c757d;
+    color: white;
+}
+
+.rmp-loading {
+    display: inline-block;
+    margin-left: 10px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.rmp-tooltip {
+    position: relative;
+    cursor: pointer;
+}
+
+.rmp-tooltip:hover .rmp-tooltip-content {
+    display: block;
+}
+
+.rmp-tooltip-content {
+    display: none;
+    position: absolute;
+    z-index: 1000;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    width: 200px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    left: 50%;
+    transform: translateX(-50%);
+    top: 100%;
+    margin-top: 5px;
+}
+
+.rmp-tooltip-content:before {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 6px solid white;
+}
+
+.rmp-tooltip-content p {
+    margin: 5px 0;
+    font-size: 0.8rem;
+    color: #333;
+}
+
+.rmp-tooltip-content .rmp-tooltip-title {
+    font-weight: bold;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.rmp-tooltip-footer {
+    font-size: 0.75rem;
+    color: #6c757d;
+    font-style: italic;
+    margin-top: 5px;
+    text-align: center;
+}
+
+/* Selected Sections and Schedule */
 .selected-sections {
     margin-top: 30px;
     padding-top: 20px;
@@ -346,7 +400,7 @@
     border-left: 4px solid #007bff;
 }
 
-/* Schedule styles */
+/* Schedule Styles */
 .schedule-container {
     margin-top: 30px;
     padding-top: 20px;
@@ -408,7 +462,6 @@
 .day-slots {
     position: relative;
     height: calc(60px * 15);
-    /* 15 hour slots */
 }
 
 .course-block {
@@ -437,13 +490,13 @@
     flex-direction: column;
 }
 
-.course-block-content strong {
-    font-size: 0.9rem;
-    margin-bottom: 2px;
+.course-block-title {
     color: #2c3e50;
 }
 
-.course-block-title {
+.course-block-title strong {
+    font-size: 0.9rem;
+    margin-bottom: 2px;
     color: #2c3e50;
 }
 
@@ -477,10 +530,7 @@
     font-size: 0.75rem;
 }
 
-.form-group {
-    margin-bottom: 15px;
-}
-
+/* Time Block Form */
 .time-inputs {
     display: flex;
     gap: 15px;
@@ -490,12 +540,33 @@
     flex: 1;
 }
 
-.time-block-form h3 {
-    margin-top: 0;
-    margin-bottom: 20px;
-    color: #2c3e50;
+.form-group {
+    margin-bottom: 15px;
 }
 
+.time-dropdown {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    cursor: pointer;
+}
+
+.time-dropdown:hover,
+.time-dropdown:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.day-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Modal styles */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -506,7 +577,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
+    z-index: 9000;
 }
 
 .modal-content {
@@ -517,6 +588,8 @@
     max-width: 400px;
     width: 90%;
     text-align: center;
+    z-index: 9001;
+    position: relative;
 }
 
 .modal-content p {
@@ -535,6 +608,10 @@
 .modal-buttons button {
     padding: 0.5rem 1.5rem;
     min-width: 100px;
+    cursor: pointer;
+    border: none;
+    border-radius: 4px;
+    color: white;
 }
 
 .modal-buttons button:first-child {
@@ -553,6 +630,7 @@
     background-color: #c82333;
 }
 
+/* Registration Styles */
 .registration-actions {
     margin-top: 20px;
     text-align: center;
@@ -566,7 +644,6 @@
     border-radius: 4px;
     font-size: 1.1rem;
     cursor: pointer;
-    transition: background-color 0.2s;
 }
 
 .register-button:hover {
@@ -589,4 +666,17 @@
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
+}
+
+/* Z-index fixes for modals */
+.time-block-form-overlay {
+    z-index: 8000;
+}
+
+.modal-overlay:not(.time-block-form-overlay) {
+    z-index: 10000;
+}
+
+.modal-overlay:not(.time-block-form-overlay) .modal-content {
+    z-index: 10001;
 }
