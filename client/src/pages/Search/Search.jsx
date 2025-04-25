@@ -7,7 +7,11 @@ const Search = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedSections, setSelectedSections] = useState([]);
+  const [selectedSections, setSelectedSections] = useState(() => {
+    // Load selected sections from localStorage on component mount
+    const savedSections = localStorage.getItem('selectedSections');
+    return savedSections ? JSON.parse(savedSections) : [];
+  });
   const [modal, setModal] = useState(null);
   const [sectionColors, setSectionColors] = useState(new Map());
 
@@ -34,7 +38,11 @@ const Search = () => {
   });
   
   // Personal time blocks
-  const [timeBlocks, setTimeBlocks] = useState([]);
+  const [timeBlocks, setTimeBlocks] = useState(() => {
+    // Load time blocks from localStorage on component mount
+    const savedTimeBlocks = localStorage.getItem('timeBlocks');
+    return savedTimeBlocks ? JSON.parse(savedTimeBlocks) : [];
+  });
   const [timeBlockForm, setTimeBlockForm] = useState({
     name: '',
     days: '',
@@ -881,6 +889,50 @@ const Search = () => {
       />
     );
   };
+
+  // Add useEffect to save selected sections to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('selectedSections', JSON.stringify(selectedSections));
+  }, [selectedSections]);
+
+  // Add useEffect to save time blocks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('timeBlocks', JSON.stringify(timeBlocks));
+  }, [timeBlocks]);
+
+  // Add useEffect to load the selected course when selected sections change
+  useEffect(() => {
+    if (selectedSections.length > 0 && results.length > 0) {
+      const firstSection = selectedSections[0];
+      const matchingCourse = results.find(course => course.Course === firstSection.courseCode);
+      if (matchingCourse) {
+        setSelectedCourse(matchingCourse);
+      }
+    }
+  }, [selectedSections, results]);
+
+  // Add useEffect to load the course data when the component mounts
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (selectedSections.length > 0) {
+        try {
+          setIsLoading(true);
+          const { data } = await axios.get('http://localhost:8000/api/courses/search', {
+            params: {
+              query: selectedSections[0].courseCode
+            },
+          });
+          setResults(data);
+        } catch (error) {
+          console.error('Error loading initial course data:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+  }, []);
 
   return (
     
