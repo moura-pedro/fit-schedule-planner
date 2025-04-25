@@ -23,14 +23,17 @@ const getRatingByProfessor = async (req, res) => {
   try {
     const { firstName, lastName, schoolId = "1449" } = req.query; // 1449 = Florida Institute of Technology
     
-    if (!firstName || !lastName) {
+    if (!lastName) {
       return res.status(400).json({ 
-        error: 'Missing professor name parameters',
+        error: 'Missing professor last name',
         found: false
       });
     }
     
-    const cacheKey = `${firstName}_${lastName}_${schoolId}`;
+    // If firstName is empty, try searching with just the lastName
+    const searchFirstName = firstName || '';
+    
+    const cacheKey = `${searchFirstName}_${lastName}_${schoolId}`;
     
     // Check cache first
     if (ratingsCache[cacheKey]) {
@@ -38,11 +41,11 @@ const getRatingByProfessor = async (req, res) => {
     }
     
     // Try multiple approaches for better reliability
-    let result = await searchByNameDirectly(firstName, lastName, schoolId);
+    let result = await searchByNameDirectly(searchFirstName, lastName, schoolId);
     
     if (!result.found) {
       // Try searching the school's professors list page
-      result = await searchSchoolProfessorsList(firstName, lastName, schoolId);
+      result = await searchSchoolProfessorsList(searchFirstName, lastName, schoolId);
     }
     
     // Cache the result

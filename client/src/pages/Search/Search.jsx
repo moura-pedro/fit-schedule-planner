@@ -275,23 +275,24 @@ const Search = () => {
       setIsLoadingRMP(true);
       
       // Split name for better searching
-      const nameParts = professorName.split(' ');
+      const nameParts = professorName.trim().split(' ');
       let lastName = '';
       let firstName = '';
       
       if (nameParts.length >= 2) {
         lastName = nameParts[nameParts.length - 1];
-        firstName = nameParts[0];
+        firstName = nameParts.slice(0, -1).join(' '); // Join all parts except the last one as first name
       } else {
         lastName = professorName;
+        firstName = ''; // Set empty string instead of undefined
       }
       
       // Call the backend API
       const response = await axios.get('http://localhost:8000/api/rmp/professor', {
         params: {
           firstName,
-          lastName
-          // schoolId is optional and defaults to 1449 (Florida Tech) in our backend
+          lastName,
+          schoolId: "1449" // Florida Tech's school ID
         }
       });
       
