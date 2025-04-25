@@ -55,38 +55,74 @@ const Search = () => {
     return 'rmp-score-poor';
   };
 
-  // TimeDropdown component with 15-minute intervals for 24 hours
+  // TimeDropdown component with hours, minutes, and AM/PM selectors
   const TimeDropdown = ({ value, onChange, label }) => {
-    const generateTimeOptions = () => {
-      const options = [];
-      for (let hour = 0; hour < 24; hour++) {
-        for (let minute of [0, 15, 30, 45]) {
-          const period = hour >= 12 ? 'PM' : 'AM';
-          const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-          const timeString = `${displayHour}:${minute === 0 ? '00' : minute} ${period}`;
-          options.push(timeString);
-        }
+    const [hours, setHours] = useState('1');
+    const [minutes, setMinutes] = useState('00');
+    const [period, setPeriod] = useState('AM');
+
+    useEffect(() => {
+      if (value) {
+        const [time, period] = value.split(' ');
+        const [h, m] = time.split(':');
+        setHours(h || '1');
+        setMinutes(m || '00');
+        setPeriod(period || 'AM');
       }
-      return options;
+    }, [value]);
+
+    const handleHoursChange = (e) => {
+      const newHours = e.target.value;
+      setHours(newHours);
+      onChange(`${newHours}:${minutes} ${period}`);
     };
 
-    const timeOptions = generateTimeOptions();
+    const handleMinutesChange = (e) => {
+      const newMinutes = e.target.value;
+      setMinutes(newMinutes);
+      onChange(`${hours}:${newMinutes} ${period}`);
+    };
+
+    const handlePeriodChange = (e) => {
+      const newPeriod = e.target.value;
+      setPeriod(newPeriod);
+      onChange(`${hours}:${minutes} ${newPeriod}`);
+    };
 
     return (
-      <div>
+      <div className="time-input-group">
         <label>{label}</label>
-        <select 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)}
-          className="time-dropdown"
-        >
-          <option value="">Select Time</option>
-          {timeOptions.map((time) => (
-            <option key={time} value={time}>
-              {time}
-            </option>
-          ))}
-        </select>
+        <div className="time-input-container">
+          <select
+            value={hours}
+            onChange={handleHoursChange}
+            className="time-select"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+              <option key={hour} value={hour}>{hour}</option>
+            ))}
+          </select>
+          <span className="time-separator">:</span>
+          <select
+            value={minutes}
+            onChange={handleMinutesChange}
+            className="time-select"
+          >
+            {Array.from({ length: 12 }, (_, i) => i * 5).map(minute => (
+              <option key={minute} value={minute.toString().padStart(2, '0')}>
+                {minute.toString().padStart(2, '0')}
+              </option>
+            ))}
+          </select>
+          <select
+            value={period}
+            onChange={handlePeriodChange}
+            className="period-select"
+          >
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
       </div>
     );
   };
@@ -100,13 +136,11 @@ const Search = () => {
     }
   
     componentDidMount() {
-      // Focus on the name input when the modal opens
       if (this.nameInputRef.current) {
         this.nameInputRef.current.focus();
       }
     }
     
-    // New handler to stop propagation for all clicks inside the modal
     handleModalClick = (e) => {
       e.stopPropagation();
     };
