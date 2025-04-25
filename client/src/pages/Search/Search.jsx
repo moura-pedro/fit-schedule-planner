@@ -591,8 +591,8 @@ const Search = () => {
       return;
     }
 
-    const [enrolled, maxCapacity] = section.Capacity.split('/').map(Number);
-    if (enrolled >= maxCapacity) {
+    const maxCapacity = parseInt(section.Capacity.split('/')[1] || section.Capacity);
+    if (section.CurrentEnrollment >= maxCapacity) {
       setModal({
         type: 'confirm',
         message: 'This section is full. Do you still want to add it?',
@@ -978,7 +978,7 @@ const Search = () => {
             results.map((course) => (
               <div
                 key={course._id}
-                className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
+                className={`course-card ${selectedCourse && selectedCourse.Course === course.Course ? 'selected' : ''}`}
                 onClick={() => setSelectedCourse(course)}
               >
                 <h3 className="course-title">{course.Course}: {course.Title}</h3>
