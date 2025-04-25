@@ -7,7 +7,11 @@ const Search = () => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedSections, setSelectedSections] = useState([]);
+  const [selectedSections, setSelectedSections] = useState(() => {
+    // Load selected sections from localStorage on component mount
+    const savedSections = localStorage.getItem('selectedSections');
+    return savedSections ? JSON.parse(savedSections) : [];
+  });
   const [modal, setModal] = useState(null);
   const [sectionColors, setSectionColors] = useState(new Map());
 
@@ -34,7 +38,11 @@ const Search = () => {
   });
   
   // Personal time blocks
-  const [timeBlocks, setTimeBlocks] = useState([]);
+  const [timeBlocks, setTimeBlocks] = useState(() => {
+    // Load time blocks from localStorage on component mount
+    const savedTimeBlocks = localStorage.getItem('timeBlocks');
+    return savedTimeBlocks ? JSON.parse(savedTimeBlocks) : [];
+  });
   const [timeBlockForm, setTimeBlockForm] = useState({
     name: '',
     days: '',
@@ -55,38 +63,74 @@ const Search = () => {
     return 'rmp-score-poor';
   };
 
-  // TimeDropdown component with 15-minute intervals for 24 hours
+  // TimeDropdown component with hours, minutes, and AM/PM selectors
   const TimeDropdown = ({ value, onChange, label }) => {
-    const generateTimeOptions = () => {
-      const options = [];
-      for (let hour = 0; hour < 24; hour++) {
-        for (let minute of [0, 15, 30, 45]) {
-          const period = hour >= 12 ? 'PM' : 'AM';
-          const displayHour = hour > 12 ? hour - 12 : (hour === 0 ? 12 : hour);
-          const timeString = `${displayHour}:${minute === 0 ? '00' : minute} ${period}`;
-          options.push(timeString);
-        }
+    const [hours, setHours] = useState('1');
+    const [minutes, setMinutes] = useState('00');
+    const [period, setPeriod] = useState('AM');
+
+    useEffect(() => {
+      if (value) {
+        const [time, period] = value.split(' ');
+        const [h, m] = time.split(':');
+        setHours(h || '1');
+        setMinutes(m || '00');
+        setPeriod(period || 'AM');
       }
-      return options;
+    }, [value]);
+
+    const handleHoursChange = (e) => {
+      const newHours = e.target.value;
+      setHours(newHours);
+      onChange(`${newHours}:${minutes} ${period}`);
     };
 
-    const timeOptions = generateTimeOptions();
+    const handleMinutesChange = (e) => {
+      const newMinutes = e.target.value;
+      setMinutes(newMinutes);
+      onChange(`${hours}:${newMinutes} ${period}`);
+    };
+
+    const handlePeriodChange = (e) => {
+      const newPeriod = e.target.value;
+      setPeriod(newPeriod);
+      onChange(`${hours}:${minutes} ${newPeriod}`);
+    };
 
     return (
-      <div>
+      <div className="time-input-group">
         <label>{label}</label>
-        <select 
-          value={value} 
-          onChange={(e) => onChange(e.target.value)}
-          className="time-dropdown"
-        >
-          <option value="">Select Time</option>
-          {timeOptions.map((time) => (
-            <option key={time} value={time}>
-              {time}
-            </option>
-          ))}
-        </select>
+        <div className="time-input-container">
+          <select
+            value={hours}
+            onChange={handleHoursChange}
+            className="time-select"
+          >
+            {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+              <option key={hour} value={hour}>{hour}</option>
+            ))}
+          </select>
+          <span className="time-separator">:</span>
+          <select
+            value={minutes}
+            onChange={handleMinutesChange}
+            className="time-select"
+          >
+            {Array.from({ length: 12 }, (_, i) => i * 5).map(minute => (
+              <option key={minute} value={minute.toString().padStart(2, '0')}>
+                {minute.toString().padStart(2, '0')}
+              </option>
+            ))}
+          </select>
+          <select
+            value={period}
+            onChange={handlePeriodChange}
+            className="period-select"
+          >
+            <option value="AM">AM</option>
+            <option value="PM">PM</option>
+          </select>
+        </div>
       </div>
     );
   };
@@ -100,13 +144,11 @@ const Search = () => {
     }
   
     componentDidMount() {
-      // Focus on the name input when the modal opens
       if (this.nameInputRef.current) {
         this.nameInputRef.current.focus();
       }
     }
     
-    // New handler to stop propagation for all clicks inside the modal
     handleModalClick = (e) => {
       e.stopPropagation();
     };
@@ -241,23 +283,24 @@ const Search = () => {
       setIsLoadingRMP(true);
       
       // Split name for better searching
-      const nameParts = professorName.split(' ');
+      const nameParts = professorName.trim().split(' ');
       let lastName = '';
       let firstName = '';
       
       if (nameParts.length >= 2) {
         lastName = nameParts[nameParts.length - 1];
-        firstName = nameParts[0];
+        firstName = nameParts.slice(0, -1).join(' '); // Join all parts except the last one as first name
       } else {
         lastName = professorName;
+        firstName = ''; // Set empty string instead of undefined
       }
       
       // Call the backend API
       const response = await axios.get('http://localhost:8000/api/rmp/professor', {
         params: {
           firstName,
-          lastName
-          // schoolId is optional and defaults to 1449 (Florida Tech) in our backend
+          lastName,
+          schoolId: "1449" // Florida Tech's school ID
         }
       });
       
@@ -591,8 +634,8 @@ const Search = () => {
       return;
     }
 
-    const [enrolled, maxCapacity] = section.Capacity.split('/').map(Number);
-    if (enrolled >= maxCapacity) {
+    const maxCapacity = parseInt(section.Capacity.split('/')[1] || section.Capacity);
+    if (section.CurrentEnrollment >= maxCapacity) {
       setModal({
         type: 'confirm',
         message: 'This section is full. Do you still want to add it?',
@@ -847,6 +890,50 @@ const Search = () => {
     );
   };
 
+  // Add useEffect to save selected sections to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('selectedSections', JSON.stringify(selectedSections));
+  }, [selectedSections]);
+
+  // Add useEffect to save time blocks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('timeBlocks', JSON.stringify(timeBlocks));
+  }, [timeBlocks]);
+
+  // Add useEffect to load the selected course when selected sections change
+  useEffect(() => {
+    if (selectedSections.length > 0 && results.length > 0) {
+      const firstSection = selectedSections[0];
+      const matchingCourse = results.find(course => course.Course === firstSection.courseCode);
+      if (matchingCourse) {
+        setSelectedCourse(matchingCourse);
+      }
+    }
+  }, [selectedSections, results]);
+
+  // Add useEffect to load the course data when the component mounts
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (selectedSections.length > 0) {
+        try {
+          setIsLoading(true);
+          const { data } = await axios.get('http://localhost:8000/api/courses/search', {
+            params: {
+              query: selectedSections[0].courseCode
+            },
+          });
+          setResults(data);
+        } catch (error) {
+          console.error('Error loading initial course data:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    loadInitialData();
+  }, []);
+
   return (
     
     <div className="search-container">
@@ -978,7 +1065,7 @@ const Search = () => {
             results.map((course) => (
               <div
                 key={course._id}
-                className={`course-card ${selectedCourse?._id === course._id ? 'selected' : ''}`}
+                className={`course-card ${selectedCourse && selectedCourse.Course === course.Course ? 'selected' : ''}`}
                 onClick={() => setSelectedCourse(course)}
               >
                 <h3 className="course-title">{course.Course}: {course.Title}</h3>
